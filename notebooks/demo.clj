@@ -21,6 +21,7 @@
             [dk.simongray.colour-coded.target :as target]
             [dk.simongray.colour-coded.theme :as theme]
             [dk.simongray.colour-coded.tone :as tone]
+            [dk.simongray.colour-coded.vision :as vision]
             [nextjournal.clerk :as clerk])
   (:import [java.awt Color GradientPaint Polygon Rectangle RenderingHints]
            [java.awt.geom Ellipse2D$Double]
@@ -544,6 +545,51 @@
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (swatches mid-tones (map #(if (= % contrast/black) "black" "white") picks))
+
+;; ## Colour vision
+;;
+;; The `vision` namespace shows colours as people with a colour vision
+;; deficiency see them, by the model of Machado, Oliveira and Fernandes:
+;; protan and deutan, the red-green deficiencies, and the rarer tritan.
+;; These are the first five colours of the palette that D3 and Matplotlib
+;; use for categories, at full severity:
+
+(def chart
+  ["#d62728" "#2ca02c" "#1f77b4" "#ff7f0e" "#9467bd"])
+
+(def seen
+  (cons [:normal chart]
+        (for [d vision/deficiencies]
+          [d (map #(vision/simulate % d) chart)])))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[k xs] seen]
+            [(name k) (strip xs)]))
+
+;; A severity below 1 simulates the milder deficiencies, in which the cone
+;; still responds, but shifted:
+
+(def deutan-by-severity
+  (for [severity [0.25 0.5 0.75 1]]
+    [severity (map #(vision/simulate % :deutan severity) chart)]))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[severity xs] deutan-by-severity]
+            [(str "deutan at " severity) (strip xs)]))
+
+;; To check that a palette's colours stay apart, `least-difference` returns
+;; the least ΔEOK between any two of them with each deficiency. For a
+;; protan, the chart's green and orange nearly meet:
+
+(def chart-differences
+  (vision/least-difference chart))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[k d] chart-differences]
+            [(name k)
+             [:div {:style {:display "flex" :gap "0.5rem" :align-items "center"}}
+              [:div {:style {:width (str (* 100 d) "rem") :height "1rem" :background "#888" :border-radius "3px"}}]
+              (fmt "%.3f" d)]]))
 
 ;; ## Mixing
 ;;

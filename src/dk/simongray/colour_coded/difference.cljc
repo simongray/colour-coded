@@ -115,3 +115,16 @@
   ([x xs f]
    (when (seq xs)
      (apply min-key #(f x %) xs))))
+
+(defn least
+  "The least difference between any two colours of `xs`, by ΔEOK or by the
+  measure `f`, or nil for fewer than two colours."
+  ([xs]
+   (least xs delta-e))
+  ([xs f]
+   (let [xs (vec xs)]
+     (some->> (for [i (range (count xs))
+                    j (range (inc i) (count xs))]
+                (f (xs i) (xs j)))
+              (seq)
+              (apply min)))))

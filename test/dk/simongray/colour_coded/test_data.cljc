@@ -8,7 +8,10 @@
     expect, which dev/wpt.mjs writes
   - ciede2000.txt, the 34 pairs of Sharma, Wu and Dalal (2005), as Sharma
     publishes them for research, with their CIEDE2000:
-    https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/"
+    https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/
+  - machado2009.json, the matrices of Machado, Oliveira and Fernandes
+    (2009) and what colour-science computes with them, which
+    dev/machado.py writes"
   #?(:clj  (:require [clojure.data.json :as json]
                      [clojure.java.io :as io]
                      [clojure.string :as str])
@@ -47,6 +50,11 @@
   (for [line  (str/split-lines (resource "ciede2000.txt"))
         :when (not (str/blank? line))]
     (mapv parse-double (str/split (str/trim line) #"\s+"))))
+
+(def machado2009
+  "The \"matrices\" of Machado, Oliveira and Fernandes for each deficiency,
+  and the \"simulations\" of colour-science for a fixed set of colours."
+  (json (resource "machado2009.json")))
 
 (defn fixture-colour
   "The colour of a fixture of Colour.js `m`, a map of its space, by

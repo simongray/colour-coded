@@ -26,7 +26,8 @@ syntax of CSS.
   Dictionary.
 - **Colour theory as plain functions,** each citing its source: contrast,
   colour difference, harmonies, colours at a fixed lightness, colours found
-  by the contrast they should have, and the colours of an image.
+  by the contrast they should have, the colours of an image, and colours
+  as people with a colour vision deficiency see them.
 
 The library depends on Clojure alone. Only the image namespace calls the
 platform, to decode an image: ImageIO on the JVM, and the browser's
@@ -121,6 +122,21 @@ function takes a CSS colour as well:
 ;; => "#15c000"
 ```
 
+To check that a palette's colours stay apart for people with a colour
+vision deficiency:
+
+```clojure
+(require '[dk.simongray.colour-coded.vision :as vision])
+
+;; red and green as someone with deuteranopia sees them
+(map #(cc/hex (vision/simulate % :deutan)) ["#e00000" "#008000"])
+;; => ("#8f7e00" "#776a18")
+
+;; the least ΔEOK between any two of the colours, with each deficiency
+(vision/least-difference ["#e00000" "#008000" "#4080ff"])
+;; => {:normal 0.343…, :protan 0.115…, :deutan 0.071…, :tritan 0.132…}
+```
+
 These are the namespaces:
 
 - `colour-coded`, colours as maps, and `space`, `syntax`, `gamut`,
@@ -132,6 +148,8 @@ These are the namespaces:
   contrast of a pair over every hue
 - `target`, a colour at the lightness that gives it a contrast
 - `quantise` and `image`, the colours of an image
+- `vision`, colours as people with a protan, deutan or tritan deficiency
+  see them, by Machado, Oliveira and Fernandes's model
 - `theme`, the colours of a site or an app
 
 Each namespace cites its sources in its docstring, and in the code where
@@ -158,10 +176,13 @@ for review:
   of D50 where WCAG's luminance uses D65's.
 - APCA is left out: its licence forbids changing it and using it
   commercially.
+- `vision` clips a simulated colour to sRGB. Machado's matrices can give
+  a saturated colour a negative cone response, which makes its ΔEOK
+  meaningless. The tritan simulation is the paper's approximation, which
+  doesn't cover tritanopia.
 
-Material 3's HCT and dynamic schemes, the simulation of colour vision
-deficiency, ramps, data palettes and historic colour theory are still to
-come.
+Material 3's HCT and dynamic schemes, ramps, data palettes and historic
+colour theory are still to come.
 
 
 A demo
@@ -217,12 +238,24 @@ npm run fixtures
 npm run wpt
 ```
 
+The tests of `vision` compare it with the paper's matrices and with
+colour-science, whose values are in `test/resources/machado2009.json`. To
+write those again, with Python:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install colour-science
+.venv/bin/python dev/machado.py
+```
+
 
 Licence
 -------
 
 colour-coded is MIT. Its conversions and gamut mapping follow the sample
 code of CSS Color 4, under the W3C Software and Document License. The
-tests' fixtures come from Colour.js (MIT), the web-platform-tests
-(BSD-3-Clause), and Sharma, Wu and Dalal's test data for CIEDE2000, which
-they publish for research with a citation.
+matrices of `vision` are those that Machado, Oliveira and Fernandes publish
+with their paper. The tests' fixtures come from Colour.js (MIT), the
+web-platform-tests (BSD-3-Clause), colour-science (BSD-3-Clause), and
+Sharma, Wu and Dalal's test data for CIEDE2000, which they publish for
+research with a citation.

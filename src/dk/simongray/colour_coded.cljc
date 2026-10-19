@@ -21,6 +21,7 @@
     core
   - choose, harmony, tone and target, ways to choose and generate colours
   - quantise and image, the colours of an image
+  - vision, colours as people with a colour vision deficiency see them
   - theme, the colours of a site or an app, from one colour or one image"
   (:require [dk.simongray.colour-coded.syntax :as syntax]
             [dk.simongray.colour-coded.space :as space]))

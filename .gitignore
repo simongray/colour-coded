@@ -13,3 +13,6 @@ target/
 # ClojureScript tooling
 node_modules/
 .shadow-cljs/
+
+# the Python of dev/machado.py
+.venv/

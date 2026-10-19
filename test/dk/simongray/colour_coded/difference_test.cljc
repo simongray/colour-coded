@@ -23,3 +23,11 @@
   (is (= "orange" (difference/nearest "#ff9900" ["red" "orange" "yellow"])))
   (is (= "red" (difference/nearest "#dd1100" ["red" "orange" "yellow"] difference/delta-e-2000)))
   (is (nil? (difference/nearest "red" []))))
+
+(deftest least
+  (is (= (difference/delta-e "orange" "#ff9900")
+         (difference/least ["red" "orange" "#ff9900" "blue"])))
+  (is (= (difference/delta-e-2000 "red" "blue")
+         (difference/least ["red" "blue"] difference/delta-e-2000)))
+  (is (nil? (difference/least ["red"])))
+  (is (nil? (difference/least []))))
