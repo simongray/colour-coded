@@ -1,0 +1,15 @@
+.DS_Store
+.cpcache/
+.nrepl-port
+.clj-kondo/.cache/
+.lsp/
+target/
+*.iml
+.idea/
+
+# Clerk's cache of the demo notebook
+.clerk/
+
+# ClojureScript tooling
+node_modules/
+.shadow-cljs/

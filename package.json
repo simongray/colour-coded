@@ -1,0 +1,14 @@
+{
+  "name": "colour-coded",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Node tools for colour-coded's tests: shadow-cljs, and Colour.js, which writes the fixtures and checks the library against itself. The library has no npm dependencies.",
+  "scripts": {
+    "fixtures": "node dev/fixtures.mjs",
+    "wpt": "node dev/wpt.mjs"
+  },
+  "devDependencies": {
+    "colorjs.io": "0.7.1",
+    "shadow-cljs": "^3.5.3"
+  }
+}
