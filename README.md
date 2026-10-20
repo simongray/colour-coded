@@ -147,7 +147,8 @@ These are the namespaces:
 - `tone`, colours at a fixed lightness from one seed, and the worst
   contrast of a pair over every hue
 - `target`, a colour at the lightness that gives it a contrast
-- `quantise` and `image`, the colours of an image
+- `quantise` and `image`, the colours of an image, and `image` its
+  thumbnails too
 - `vision`, colours as people with a protan, deutan or tritan deficiency
   see them, by Machado, Oliveira and Fernandes's model
 - `theme`, the colours of a site or an app
