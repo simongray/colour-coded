@@ -35,6 +35,22 @@ decoder in ClojureScript. A [demo](#a-demo) shows every part of it
 applied to examples.
 
 
+Getting started
+---------------
+
+It requires Clojure 1.11+ and Java 11+. Add it from
+[Clojars](https://clojars.org/dk.simongray/colour-coded) to the `:deps` in
+your `deps.edn`:
+
+```clojure
+dk.simongray/colour-coded {:mvn/version "0.1.0"}
+```
+
+For unreleased changes, depend on the latest commit on `master` instead.
+In shadow-cljs, a Git dependency only works through `deps.edn`, so set
+`:deps true` in your `shadow-cljs.edn` too.
+
+
 From an image
 -------------
 
@@ -160,8 +176,7 @@ it makes a decision.
 Status
 ------
 
-The library isn't released yet. These choices were made in building it,
-for review:
+These choices were made in building it, for review:
 
 - A colour is a map of :space, :coords and :alpha, the shape that
   Colour.js uses, and every function takes CSS strings too.
