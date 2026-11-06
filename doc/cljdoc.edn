@@ -1,0 +1,4 @@
+{:cljdoc.doc/tree [["Readme" {:file "README.md"}]
+                   ["How to choose colours for e-paper" {:file "doc/e-paper.md"}]
+                   ["Why colour-coded works the way it does" {:file "doc/decisions.md"}]
+                   ["Development" {:file "doc/development.md"}]]}
