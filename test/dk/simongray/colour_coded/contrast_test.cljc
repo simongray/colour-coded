@@ -19,12 +19,12 @@
                      (contrast/ratio (gamut/clip (data/fixture-colour a))
                                      (gamut/clip (data/fixture-colour b)))))))
 
-(deftest levels
+(deftest wcag-levels
   (is (= [:aaa :aa :large nil]
-         [(contrast/level "black" "white")
-          (contrast/level "#767676" "white")
-          (contrast/level "#949494" "white")
-          (contrast/level "#cccccc" "white")])))
+         [(contrast/wcag-level "black" "white")
+          (contrast/wcag-level "#767676" "white")
+          (contrast/wcag-level "#949494" "white")
+          (contrast/wcag-level "#cccccc" "white")])))
 
 (deftest black-or-white
   (is (= ["#ffffff" "#000000" "#ffffff"] (map (comp cc/hex contrast/black-or-white) ["#a90000" "#f0c040" "#000000"]))

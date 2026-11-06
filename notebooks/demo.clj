@@ -12,7 +12,9 @@
             [dk.simongray.colour-coded.choose :as choose]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.difference :as difference]
+            [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
+            [dk.simongray.colour-coded.greyscale :as greyscale]
             [dk.simongray.colour-coded.harmony :as harmony]
             [dk.simongray.colour-coded.image :as image]
             [dk.simongray.colour-coded.mix :as mix]
@@ -161,17 +163,17 @@
 ^{::clerk/visibility {:code :hide :result :hide}}
 (defn player
   "Hiccup of a small player for the cover `b`, titled `title`, in the
-  colours of the `scheme` of image/colours."
+  colours of the `scheme` of image/scheme."
   [title b scheme]
-  (let [{:keys [background text accent accent-text seed]}
-        (update-vals scheme #(if (vector? %) % (some-> % cc/hex)))]
+  (let [{:keys [background text accent on-accent seed]}
+        (update-vals scheme #(some-> % cc/hex))]
     [:div {:style {:background background :color text :border-radius "8px" :padding "0.6rem" :width "13rem"
                    :font "13px system-ui" :box-shadow "inset 0 0 0 1px rgba(0,0,0,0.1)"}}
      [:div {:style {:display "flex" :gap "0.5rem" :align-items "center"}}
       (cover b 40)
       [:div (bold title) [:div {:style {:opacity 0.8}} (str "seed " seed)]]]
      [:div {:style {:height "4px" :background accent :margin "0.5rem 0" :border-radius "2px"}}]
-     [:span {:style {:background accent :color accent-text :padding "0.15rem 0.5rem" :border-radius "4px"}}
+     [:span {:style {:background accent :color on-accent :padding "0.15rem 0.5rem" :border-radius "4px"}}
       "Play"]]))
 
 ^{::clerk/visibility {:code :hide :result :hide}}
@@ -341,11 +343,11 @@
 
 ;; ## The colours of an image
 ;;
-;; From an image, `image/seed` returns the colour to derive a UI from. For a player, `image/colours` returns a small scheme: a
+;; From an image, `image/seed` returns the colour to derive a UI from. For a player, `image/scheme` returns a small scheme: a
 ;; background, its text, and an accent that stands apart from it.
 
 (def schemes
-  (update-vals artworks image/colours))
+  (update-vals artworks image/scheme))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (wide (row (for [[title scheme] schemes]
@@ -525,8 +527,8 @@
 (def samples
   (for [background ["white" "#767676" "#24476b" "#ffd000" "#2277d3" "#121212"]]
     {:background background
-     :black      [(contrast/ratio "black" background) (contrast/level "black" background)]
-     :white      [(contrast/ratio "white" background) (contrast/level "white" background)]}))
+     :black      [(contrast/ratio "black" background) (contrast/wcag-level "black" background)]
+     :white      [(contrast/ratio "white" background) (contrast/wcag-level "white" background)]}))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (contrast-grid samples)
@@ -591,6 +593,105 @@
               [:div {:style {:width (str (* 100 d) "rem") :height "1rem" :background "#888" :border-radius "3px"}}]
               (fmt "%.3f" d)]]))
 
+;; ## E-paper
+;;
+;; `epaper/palette` is ready to use on any e-reader. Take as many colours as
+;; you need from the front. Each also has a highlight, a pale background for
+;; black text. This is how a screen, Carta and Kaleido 3 show them, by an
+;; approximation that's only good for comparing colours:
+
+(def paper-palette
+  (epaper/palette))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[label k panel] [["on a screen" :colour nil]
+                                 ["on Carta" :colour :carta]
+                                 ["on Kaleido 3" :colour :kaleido-3]
+                                 ["highlights on a screen" :highlight nil]
+                                 ["highlights on Carta" :highlight :carta]
+                                 ["highlights on Kaleido 3" :highlight :kaleido-3]]]
+            [label (strip (map #(if panel (epaper/simulate (k %) panel) (k %)) paper-palette))]))
+
+;; `epaper/report` checks that they stay apart, and it does the same for
+;; colours of your own:
+
+(def paper-report
+  (epaper/report (map :colour paper-palette)))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(clerk/table (for [{:keys [check value wants ok?]} paper-report]
+               {"check" (name check) "value" (fmt "%.3f" (double value)) "wants" wants "ok" ok?}))
+
+;; Devices turn a colour into a grey in different ways. Each row below shows
+;; the chart's colours by one of the conversions of `greyscale`. The red and
+;; the green move most:
+
+(def chart-greys
+  (cons [:colour chart]
+        (for [k (keys greyscale/conversions)]
+          [k (map #(greyscale/grey % k) chart)])))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[k xs] chart-greys]
+            [(name k) (strip xs)]))
+
+;; So each of these colours can land on more than one of the 16 greys, which
+;; `epaper/shades` lists:
+
+(def chart-shades
+  (map epaper/shades chart))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(swatches chart (map str chart-shades))
+
+;; A colour with a shade lands on one grey by every conversion, so it looks
+;; the same on any monochrome panel. `epaper/at-shade` finds one, keeping a
+;; colour's hue and as much of its chroma as it can. These six hues are all
+;; on shade 5, which is #555555:
+
+(def on-shade-5
+  (for [hue [258 300 355 30 150 195]]
+    (epaper/at-shade {:space :oklch :coords [0.5 0.12 hue] :alpha 1.0} 5)))
+
+;; On Carta they're one flat grey, so on a monochrome panel they cost nothing:
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled [["on a screen" (strip on-shade-5)]
+           ["on Carta" (strip (map #(epaper/simulate % :carta) on-shade-5))]
+           ["on Kaleido 3" (strip (map #(epaper/simulate % :kaleido-3) on-shade-5))]])
+
+;; To tell colours apart by their grey, keep them several shades apart,
+;; which `epaper/least-gap` checks. This ramp of one hue has the most chroma
+;; that each shade allows, and at least two shades between its colours:
+
+(def ramp
+  (for [n [3 5 8 11 13]]
+    (epaper/at-shade "oklch(50% 0.4 258)" n)))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled [["on a screen" (strip ramp)]
+           ["on Carta" (strip (map #(epaper/simulate % :carta) ramp))]
+           ["on Kaleido 3" (strip (map #(epaper/simulate % :kaleido-3) ramp))]])
+
+;; A theme can sit on shades too, with `theme/epaper-roles`. Its surface
+;; matches its background, since the lightest greys are the first to bleach
+;; on a panel. These are its colours, and how the panels show them:
+
+(def paper
+  (theme/from-seed "#24476b" theme/epaper-roles))
+
+^{::clerk/visibility {:code :hide :result :hide}}
+(defn as-shown
+  "The theme `t` at the level :standard as the `panel` shows it."
+  [t panel]
+  (update t :standard update-vals
+          (fn [roles] (update-vals roles #(epaper/simulate % panel)))))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(theme-rows [["on a screen" paper]
+             ["on Carta" (as-shown paper :carta)]
+             ["on Kaleido 3" (as-shown paper :kaleido-3)]])
+
 ;; ## Mixing
 ;;
 ;; Each strip mixes the same two colours in 24 steps, in a different
@@ -626,8 +727,8 @@
 (def nearest
   (for [x ["#24476b" "#c8382d" "#e8b931" "#7aa95c" "#f4f4f2"]]
     {:colour    x
-     :ΔEOK      (difference/nearest x named)
-     :CIEDE2000 (difference/nearest x named difference/delta-e-2000)}))
+     :ΔEOK      (difference/nearest named x)
+     :CIEDE2000 (difference/nearest named x difference/delta-e-2000)}))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (labelled (for [{:keys [colour ΔEOK CIEDE2000]} nearest]

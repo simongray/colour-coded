@@ -1,6 +1,27 @@
 (ns dk.simongray.colour-coded.choose-test
   (:require [clojure.test :refer [deftest is]]
+            [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]))
+
+(defn- hexes
+  "The scheme `m` with its colours as hex colours."
+  [m]
+  (update-vals m #(some-> % cc/hex)))
+
+;; podcast-clj's tests of scheme
+(deftest a-scheme-by-the-colours-of-an-image
+  (is (= {:background "#a90000" :text "#ffffff" :accent "#f0c040" :on-accent "#000000" :seed "#a90000"}
+         (hexes (choose/scheme ["#a90000" "#1a1a1a" "#f0c040"])))
+      "an accent that stands apart from the background, where the dark grey doesn't")
+  (is (= ["#002fff" "#ffffff"] ((juxt :accent :on-accent) (hexes (choose/scheme ["#ffd000" "#ffc010"]))))
+      "or else the complement, when it stands apart")
+  (is (= "#ffffff" (:accent (hexes (choose/scheme ["#a90000" "#a01010"]))))
+      "or else the colour of the text, as the complement of dark red is only 2.7:1")
+  (is (= "#000000" (:accent (hexes (choose/scheme ["#f4f4f4" "#eeeeee"])))) "and a grey its own complement")
+  (is (nil? (:seed (choose/scheme ["#000000" "#ffffff"]))))
+  (is (nil? (choose/scheme [])))
+  (is (every? cc/colour? (vals (choose/scheme ["red" "blue"])))
+      "colour maps in every role, whether given strings or not"))
 
 (deftest a-seed-to-colour-by
   (is (= "#24476b" (choose/seed ["#ffffff" "#111111" "#24476b"]))

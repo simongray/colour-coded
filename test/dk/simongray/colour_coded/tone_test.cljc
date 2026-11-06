@@ -1,7 +1,8 @@
 (ns dk.simongray.colour-coded.tone-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.contrast :as contrast]
+            [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
             [dk.simongray.colour-coded.tone :as tone]
             [dk.simongray.colour-coded.test-data :as data]))
@@ -42,3 +43,24 @@
         "and a few percent for a vivid colour")
     (is (> (spread (ratios {:l 0.5 :c 0.15} {:l 1 :c 0})) 1.15)
         "where tokens in OKLCH differ by more")))
+
+(deftest tokens-on-a-shade
+  (doseq [seed  ["#24476b" "#a90000" "#00a000" "grey"]
+          token [{:shade 5} {:shade 5 :c 0.1} {:shade 12 :c 0.1 :turn 180}
+                 {:shade 5 :c 30 :space :lch}]]
+    (is (= (:shade token) (epaper/shade (tone/tone token seed)))
+        (str seed " " token)))
+  (is (= "#ffffff" (cc/hex (tone/tone {:shade 15 :c 0} "red"))))
+  (is (= {:a "#555555"} (update-vals (tone/tones {:a {:shade 5 :c 0}} "red") cc/hex))))
+
+(deftest relative-css-of-a-shade
+  (is (= "oklch(from var(--seed) 44.9533% min(c, 0.1) h)"
+         (tone/relative-css {:shade 5 :c 0.1} "--seed"))
+      "the lightness of the shade's grey")
+  (testing "it lands within a shade or two, by the clipping of a browser"
+    (doseq [shade [3 4 5 8 12]
+            hue   (range 0 360 30)
+            :let  [seed   {:space :oklch :coords [0.5 0.3 hue] :alpha 1.0}
+                   colour (gamut/clip (tone/unmapped {:shade shade :c 0.12} seed))]
+            s     (epaper/shades colour)]
+      (is (<= (abs (- s shade)) 2) (str "shade " shade " at hue " hue)))))

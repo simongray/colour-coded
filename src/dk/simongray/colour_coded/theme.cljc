@@ -31,6 +31,12 @@
 
   A theme is plain data, so you can set a role by hand, e.g. with assoc-in,
   and report checks it again.
+
+  For e-paper, epaper-roles puts each role on a panel's grey:
+
+      (def t (from-seed \"#24476b\" epaper-roles))
+      (remove :ok? (report t epaper/ratio))
+
   https://github.com/material-foundation/material-color-utilities/blob/main/concepts/contrast_for_accessibility.md
   https://www.radix-ui.com/themes/docs/theme/color"
   (:require [clojure.string :as str]
@@ -90,6 +96,61 @@
                            :link       [85 50]
                            :focus      [85 50]})}})
 
+(defn- on-shades
+  "The tokens of the `roles`, a map of each role to its shade on an e-paper
+  panel and the most chroma it takes from the seed, in OKLCH."
+  [roles]
+  (update-vals roles (fn [[shade c]] {:shade shade :c c})))
+
+;; A panel has little contrast to spend. The surface is the same as the
+;; background, since the lightest greys are the first to bleach and each
+;; shade below white costs the text on it, so a card needs a border
+(def epaper-roles
+  "The tokens of each role on an e-paper panel, for from-seed. Their colours
+  land on one grey by every conversion and keep their contrast as Carta and
+  Kaleido 3 show them, except that the level :more asks for a ratio of 7,
+  which Kaleido 3 can't reach by epaper/ratio."
+  {:standard {:light (on-shades {:background [15 0]
+                                 :surface    [15 0]
+                                 :text       [0 0]
+                                 :text-muted [4 0]
+                                 :border     [6 0]
+                                 :divider    [12 0]
+                                 :accent     [4 0.12]
+                                 :on-accent  [15 0]
+                                 :link       [4 0.12]
+                                 :focus      [4 0.12]})
+              :dark  (on-shades {:background [0 0]
+                                 :surface    [0 0]
+                                 :text       [15 0]
+                                 :text-muted [13 0]
+                                 :border     [10 0]
+                                 :divider    [4 0]
+                                 :accent     [13 0.08]
+                                 :on-accent  [0 0]
+                                 :link       [13 0.08]
+                                 :focus      [13 0.08]})}
+   :more     {:light (on-shades {:background [15 0]
+                                 :surface    [15 0]
+                                 :text       [0 0]
+                                 :text-muted [3 0]
+                                 :border     [5 0]
+                                 :divider    [10 0]
+                                 :accent     [3 0.1]
+                                 :on-accent  [15 0]
+                                 :link       [3 0.1]
+                                 :focus      [3 0.1]})
+              :dark  (on-shades {:background [0 0]
+                                 :surface    [0 0]
+                                 :text       [15 0]
+                                 :text-muted [14 0]
+                                 :border     [11 0]
+                                 :divider    [6 0]
+                                 :accent     [14 0.06]
+                                 :on-accent  [0 0]
+                                 :link       [14 0.06]
+                                 :focus      [14 0.06]})}})
+
 ;; WCAG 2.2, success criteria 1.4.3, 1.4.6 and 1.4.11
 (def requirements
   "The pairs of roles that must contrast, and the least contrast ratio of
@@ -119,27 +180,23 @@
            (for [[level appearances] roles]
              [level (update-vals appearances #(tone/tones % seed))])))))
 
-(def fallback
-  "The grey that from-pixels takes as the seed of an image without an
-  opaque pixel."
-  {:space :srgb :coords [0.5 0.5 0.5] :alpha 1.0})
-
 (defn from-pixels
   "The theme of the image whose `pixels` are vectors of red, green, blue and
   alpha from 0 to 255, with the `roles` of from-seed. Its seed is the
   image's commonest colour with a hue, by choose/seed, or else its
-  commonest colour."
+  commonest colour. An image without an opaque pixel has no theme."
   ([pixels]
    (from-pixels pixels roles))
   ([pixels roles]
-   (let [palette (map :colour (quantise/buckets pixels 5))]
-     (from-seed (or (choose/seed palette) (first palette) fallback) roles))))
+   (let [colours (map :colour (quantise/buckets pixels))]
+     (from-seed (or (choose/seed colours) (first colours)) roles))))
 
 (defn from-image
   "The theme of the image in the bytes `b`, e.g. a podcast's artwork, with
   the `roles` of from-seed: from-pixels of the pixels that image/pixels
   decodes. On the JVM it returns the theme, and in ClojureScript a promise
-  of it, which is nil where the platform can't decode the image."
+  of it, which is nil where the platform can't decode the image or the image
+  is all transparent."
   ([b]
    (from-image b roles))
   ([b roles]
@@ -161,28 +218,35 @@
   ([theme]
    (hex theme :standard))
   ([theme level]
-   (update-vals (colours theme level) #(update-vals % cc/hex))))
+   (when-let [appearances (colours theme level)]
+     (update-vals appearances #(update-vals % cc/hex)))))
 
 (defn report
   "Each pair of roles of the `theme` that must contrast, at each level and
-  in each appearance, as a map of these:
+  in each appearance, by the function `ratio` of two colours, by default
+  contrast/ratio, as a map of these:
 
   - :roles, the pair
   - :level and :appearance
   - :ratio, and :wants, the least that it should be
-  - :ok?, whether it is"
-  [theme]
-  (for [[level pairs]          requirements
-        [appearance colours]   (get theme level)
-        [a b wants]            pairs
-        :when                  (and (colours a) (colours b))
-        :let                   [r (contrast/ratio (colours a) (colours b))]]
-    {:roles      [a b]
-     :level      level
-     :appearance appearance
-     :ratio      r
-     :wants      wants
-     :ok?        (>= r wants)}))
+  - :ok?, whether it is
+
+  A role set to a non-colour has a :ratio of nil, so it fails."
+  ([theme]
+   (report theme contrast/ratio))
+  ([theme ratio]
+   (when theme
+     (for [[level pairs]        requirements
+           [appearance colours] (get theme level)
+           [a b wants]          pairs
+           :when                (and (colours a) (colours b))
+           :let                 [r (ratio (colours a) (colours b))]]
+       {:roles      [a b]
+        :level      level
+        :appearance appearance
+        :ratio      r
+        :wants      wants
+        :ok?        (boolean (and r (>= r wants)))}))))
 
 ;; MDN, forced-colors: a page in forced colours keeps to the system colours
 ;; https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors
@@ -213,6 +277,22 @@
   (into {} (for [role (keys light)]
              [role (str "light-dark(" (f (light role)) ", " (f (dark role)) ")")])))
 
+(defn- stylesheet
+  "The colours or tokens in `levels`, a map of :standard and :more, as CSS, with
+  the function `f` writing each one, by the `opts` of css."
+  [levels f {:keys [selector prefix] :or {selector ":root" prefix "--"} :as opts}]
+  (let [block (fn [lines indent]
+                (str indent selector " {\n" (str/join "\n" lines) "\n" indent "}"))]
+    (str (block (concat ["  color-scheme: light dark;"
+                         (str "  accent-color: var(" prefix "accent);")]
+                        (declarations (light-dark (:standard levels) f) prefix "  "))
+                "")
+         "\n\n@media (prefers-contrast: more) {\n"
+         (block (declarations (light-dark (:more levels) f) prefix "    ") "  ")
+         "\n}\n\n@media (forced-colors: active) {\n"
+         (block (declarations system-colours prefix "    ") "  ")
+         "\n}\n")))
+
 (defn css
   "The `theme` as CSS, by the `opts` :selector, by default :root, and
   :prefix, of the custom properties, by default --. It holds these:
@@ -225,35 +305,22 @@
     checkboxes, radio buttons and range sliders"
   ([theme]
    (css theme {}))
-  ([theme {:keys [selector prefix] :or {selector ":root" prefix "--"} :as opts}]
-   (let [block (fn [lines indent]
-                 (str indent selector " {\n" (str/join "\n" lines) "\n" indent "}"))]
-     (str (block (concat ["  color-scheme: light dark;"
-                          (str "  accent-color: var(" prefix "accent);")]
-                         (declarations (light-dark (:standard theme) cc/hex) prefix "  "))
-                 "")
-          "\n\n@media (prefers-contrast: more) {\n"
-          (block (declarations (light-dark (:more theme) cc/hex) prefix "    ") "  ")
-          "\n}\n\n@media (forced-colors: active) {\n"
-          (block (declarations system-colours prefix "    ") "  ")
-          "\n}\n"))))
+  ([theme opts]
+   (when theme
+     (stylesheet theme cc/hex opts))))
 
 (defn relative-css
-  "The `roles` as CSS that derives each from the custom property `prop`,
-  e.g. --seed, with relative colours, so that a page changes its whole
-  theme by setting that one property. A browser clips a colour outside the
-  display's gamut, so the contrast can differ a little from that of
-  from-seed's colours."
+  "The `roles` as CSS that derives each one from the custom property `prop`,
+  e.g. --seed, with relative colours, so that a page changes its whole theme by
+  setting that one property. It takes the `opts` of css and holds the same
+  blocks. A browser clips a colour outside the display's gamut, so the contrast
+  can differ a little from that of from-seed's colours."
   ([prop]
    (relative-css prop roles))
   ([prop roles]
-   (let [declare #(declarations (light-dark (get roles %) (fn [token] (tone/relative-css token prop)))
-                                "--" %2)]
-     (str ":root {\n  color-scheme: light dark;\n  accent-color: var(--accent);\n"
-          (str/join "\n" (declare :standard "  "))
-          "\n}\n\n@media (prefers-contrast: more) {\n  :root {\n"
-          (str/join "\n" (declare :more "    "))
-          "\n  }\n}\n"))))
+   (relative-css prop roles {}))
+  ([prop roles opts]
+   (stylesheet roles #(tone/relative-css % prop) opts)))
 
 ;; The Design Tokens Format Module 2025.10, sections 8.1 and 9.2
 ;; https://www.w3.org/community/reports/design-tokens/CG-FINAL-format-20251028/
@@ -265,17 +332,18 @@
   ([theme]
    (design-tokens theme :standard))
   ([theme level]
-   (into {}
-         (for [[appearance roles] (colours theme level)]
-           [(name appearance)
-            (into {}
-                  (for [[role colour] roles
-                        :let [{:keys [coords]} (cc/to colour :srgb)]]
-                    [(name role) {"$type"  "color"
-                                  "$value" {"colorSpace" "srgb"
-                                            "components" (mapv #(/ (Math/round (* 1e6 (min 1.0 (max 0.0 %)))) 1e6)
-                                                               coords)
-                                            "hex"        (cc/hex colour)}}]))]))))
+   (when-let [appearances (colours theme level)]
+     (into {}
+           (for [[appearance roles] appearances]
+             [(name appearance)
+              (into {}
+                    (for [[role colour] roles
+                          :let [{:keys [coords]} (cc/to colour :srgb)]]
+                      [(name role) {"$type"  "color"
+                                    "$value" {"colorSpace" "srgb"
+                                              "components" (mapv #(/ (Math/round (* 1e6 (min 1.0 (max 0.0 %)))) 1e6)
+                                                                 coords)
+                                              "hex"        (cc/hex colour)}}]))])))))
 
 (comment
   (def t (from-seed "#24476b"))

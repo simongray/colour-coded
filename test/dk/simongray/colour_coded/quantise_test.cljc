@@ -33,4 +33,4 @@
     (is (= ["#2040a0" "#c03020" "#f0f0e8"] (hexes result)))
     (is (data/close? 1e-9 [0.4 (/ 1 3.0) (/ 4 15.0)] (map :share result)))
     (is (= 2 (count (quantise/k-means (take 110 pixels) 5))) "no more colours than the image has")
-    (is (nil? (quantise/k-means [] 3)))))
+    (is (= [] (quantise/k-means [] 3)))))

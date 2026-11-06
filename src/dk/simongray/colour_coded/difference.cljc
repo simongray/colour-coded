@@ -18,12 +18,15 @@
   "The Euclidean distance of the colours `a` and `b` in the `space`, with
   the second and third coordinates scaled by `k`."
   [a b space k]
-  (let [[l1 x1 y1] (:coords (cc/to a space))
-        [l2 x2 y2] (:coords (cc/to b space))
-        d          #(- (or %1 0) (or %2 0))]
-    (Math/sqrt (+ (Math/pow (d l1 l2) 2)
-                  (Math/pow (* k (d x1 x2)) 2)
-                  (Math/pow (* k (d y1 y2)) 2)))))
+  (let [ca (cc/to a space)
+        cb (cc/to b space)]
+    (when (and ca cb)
+      (let [[l1 x1 y1] (:coords ca)
+            [l2 x2 y2] (:coords cb)
+            d          #(- (or %1 0) (or %2 0))]
+        (Math/sqrt (+ (Math/pow (d l1 l2) 2)
+                      (Math/pow (* k (d x1 x2)) 2)
+                      (Math/pow (* k (d y1 y2)) 2)))))))
 
 (defn delta-e
   "ΔEOK, the distance of the colours `a` and `b` in Oklab, of which 0.02 is
@@ -58,12 +61,11 @@
 ;; observations, Color Research & Application 30(1), 2005, equations 1 to
 ;; 22, with kL, kC and kH of 1
 ;; https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/
-(defn delta-e-2000
-  "CIEDE2000, the difference of the colours `a` and `b` in CIELAB, of which
-  1 to 2 is about the least that shows."
-  [a b]
-  (let [[l1 a1 b1] (map #(or % 0) (:coords (cc/to a :lab)))
-        [l2 a2 b2] (map #(or % 0) (:coords (cc/to b :lab)))
+(defn- ciede2000
+  "CIEDE2000 of the CIELAB coordinates `lab1` and `lab2`."
+  [lab1 lab2]
+  (let [[l1 a1 b1] (map #(or % 0) lab1)
+        [l2 a2 b2] (map #(or % 0) lab2)
         pow7       #(Math/pow % 7)
         c-bar      (/ (+ (Math/hypot a1 b1) (Math/hypot a2 b2)) 2)
         g          (* 0.5 (- 1 (Math/sqrt (/ (pow7 c-bar) (+ (pow7 c-bar) (pow7 25))))))
@@ -107,14 +109,24 @@
                   (Math/pow (/ dhh' sh) 2)
                   (* rt (/ dc' sc) (/ dhh' sh))))))
 
+(defn delta-e-2000
+  "CIEDE2000, the difference of the colours `a` and `b` in CIELAB, of which
+  1 to 2 is about the least that shows."
+  [a b]
+  (let [ca (cc/to a :lab)
+        cb (cc/to b :lab)]
+    (when (and ca cb)
+      (ciede2000 (:coords ca) (:coords cb)))))
+
 (defn nearest
   "The colour of `xs` nearest to the colour `x` by ΔEOK, or by the measure
   `f`, a function of two colours, e.g. delta-e-2000."
-  ([x xs]
-   (nearest x xs delta-e))
-  ([x xs f]
-   (when (seq xs)
-     (apply min-key #(f x %) xs))))
+  ([xs x]
+   (nearest xs x delta-e))
+  ([xs x f]
+   (let [colours (filter cc/colour xs)]
+     (when (and (cc/colour x) (seq colours))
+       (apply min-key #(f x %) colours)))))
 
 (defn least
   "The least difference between any two colours of `xs`, by ΔEOK or by the
@@ -122,7 +134,7 @@
   ([xs]
    (least xs delta-e))
   ([xs f]
-   (let [xs (vec xs)]
+   (let [xs (filterv cc/colour xs)]
      (some->> (for [i (range (count xs))
                     j (range (inc i) (count xs))]
                 (f (xs i) (xs j)))

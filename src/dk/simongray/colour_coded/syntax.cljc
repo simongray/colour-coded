@@ -344,6 +344,9 @@
         number  #(if (nil? %) "none" (format-number %))
         named   (into {} (map (fn [[k v]] [v k])) (dissoc color-spaces "xyz"))]
     (cond
+      (nil? id)
+      nil
+
       (and (#{:srgb :hsl :hwb} id) (not missing) (some? alpha))
       (serialise-rgb (space/convert coords id :srgb) alpha)
 

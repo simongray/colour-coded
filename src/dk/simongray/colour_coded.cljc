@@ -3,8 +3,8 @@
 
   A colour is a map of its :space, its :coords and its :alpha, e.g.
   {:space :oklch :coords [0.44 0.085 158.0] :alpha 1.0}, the shape that
-  Colour.js uses. A missing component, which CSS writes as none, is nil. Every function of
-  the library takes a CSS colour as well, e.g. \"#24476b\" or
+  Colour.js uses. A missing component, which CSS writes as none, is nil. Every
+  function of the library takes a CSS colour as well, e.g. \"#24476b\" or
   \"oklch(44% 0.085 158)\", which syntax/parse reads.
 
   The spaces are those of CSS Color 4, by these ids: :srgb, :srgb-linear,
@@ -15,23 +15,48 @@
   lightness of Lab and LCH from 0 to 100, and of Oklab and OKLCH from 0 to
   1, and hues in degrees.
 
-  The other namespaces build on this one:
+  Every namespace keeps to these rules:
+
+  - A function of a colour returns nil for anything but a colour, or false
+    where it answers a question. It never guesses at a colour.
+  - The same goes for a name that doesn't exist, e.g. a space or a panel.
+  - A function of a list of colours skips what isn't a colour. A report fails
+    it instead, since finding what's wrong is what a report is for.
+  - The first argument is what a function works on, e.g. a colour or a list
+    of colours. Optional arguments come last, and default to what suits the
+    general case.
+
+  These are the other namespaces:
 
   - space, syntax, gamut, contrast, difference and mix, the rest of the
     core
   - choose, harmony, tone and target, ways to choose and generate colours
   - quantise and image, the colours of an image
   - vision, colours as people with a colour vision deficiency see them
+  - greyscale and epaper, the greys that colours become on a device, and
+    colours that keep theirs on any e-paper panel
   - theme, the colours of a site or an app, from one colour or one image"
   (:require [dk.simongray.colour-coded.syntax :as syntax]
             [dk.simongray.colour-coded.space :as space]))
 
+(defn- component?
+  "Whether `v` can be a component of a colour: a number, or nil for a missing
+  one."
+  [v]
+  (or (nil? v) (number? v)))
+
 (defn colour?
-  "Whether `x` is a colour: a map of a known :space and a vector of :coords."
+  "Whether `x` is a colour: a map of a known :space and a vector of :coords,
+  one for each coordinate of that space. Each is a number, or nil where it's
+  missing, and so is any :alpha."
   [x]
   (and (map? x)
-       (some? (space/space (:space x)))
-       (vector? (:coords x))))
+       (let [{:keys [id coords]} (space/space (:space x))]
+         (and (some? id)
+              (vector? (:coords x))
+              (= (count coords) (count (:coords x)))
+              (every? component? (:coords x))
+              (component? (:alpha x))))))
 
 (defn colour
   "The colour map of `x`, a CSS colour string or a colour map, which gets an
@@ -46,8 +71,9 @@
   gamut of the space. A missing component counts as 0 in a conversion, and
   stays missing when `space` is the colour's own."
   [x space]
-  (when-let [c (colour x)]
-    (let [id (:id (space/space space))]
+  (let [c  (colour x)
+        id (:id (space/space space))]
+    (when (and c id)
       (if (= id (:space c))
         c
         (assoc c
@@ -70,21 +96,24 @@
   "The colour `x` in the `space`, with the components that the map `m` names
   replaced, like a relative colour in CSS.
 
-  A key is the id of a component, or :alpha. A number sets the component,
-  and a function gets its old value, with 0 for a missing one.
+  A key is the id of a component or :alpha, and the result is nil for any other
+  key. A number sets the component, and a function gets its old value, with 0
+  for a missing one.
 
       (with seed :oklch {:l 0.33 :c #(min % 0.1) :h #(+ % 180)})
       ;; as oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180))"
   [x space m]
-  (when-let [c (to x space)]
-    (let [value (fn [old v] (if (fn? v) (v (or old 0.0)) v))]
+  (let [c      (to x space)
+        coords (:coords (space/space space))
+        value  (fn [old v] (if (fn? v) (v (or old 0.0)) v))]
+    (when (and c (every? (conj (set (map :id coords)) :alpha) (keys m)))
       (assoc c
              :coords (mapv (fn [{:keys [id angle?]} old]
                              (if (contains? m id)
                                (let [v (value old (get m id))]
                                  (if (and angle? (number? v)) (mod v 360) v))
                                old))
-                           (:coords (space/space space))
+                           coords
                            (:coords c))
              :alpha (if (contains? m :alpha)
                       (value (:alpha c) (:alpha m))
