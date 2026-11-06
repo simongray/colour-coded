@@ -24,22 +24,26 @@
   "The relative luminance of the colour `x`, from 0 for black to 1 for
   white, by WCAG 2.2, from its sRGB channels."
   [x]
-  (let [[r g b] (map #(space/srgb->linear (or % 0)) (:coords (cc/to x :srgb)))]
-    (+ (* 0.2126 r) (* 0.7152 g) (* 0.0722 b))))
+  (when-let [{:keys [coords]} (cc/to x :srgb)]
+    (let [[r g b] (map #(space/srgb->linear (or % 0)) coords)]
+      (+ (* 0.2126 r) (* 0.7152 g) (* 0.0722 b)))))
 
 (defn ratio
   "The contrast ratio of the colours `a` and `b`, from 1 to 21. Text wants
   4.5, and a control 3."
   [a b]
-  (let [[l1 l2] (sort > (map #(max 0.0 (luminance %)) [a b]))]
-    (/ (+ l1 0.05) (+ l2 0.05))))
+  (let [la (luminance a)
+        lb (luminance b)]
+    (when (and la lb)
+      (let [[l1 l2] (sort > (map #(max 0.0 %) [la lb]))]
+        (/ (+ l1 0.05) (+ l2 0.05))))))
 
-(defn level
-  "The level of WCAG 2.2 that the contrast of the colours `a` and `b`
-  meets: :aaa for 7 or more, :aa for 4.5, :large for 3, which is enough
-  for large text and for controls, or nil."
+(defn wcag-level
+  "The level of WCAG 2.2 that the contrast of the colours `a` and `b` meets:
+  :aaa for 7 or more, :aa for 4.5, :large for 3, which is enough for large
+  text and for controls, or nil where it meets none."
   [a b]
-  (let [r (ratio a b)]
+  (when-let [r (ratio a b)]
     (cond
       (>= r 7)   :aaa
       (>= r 4.5) :aa
@@ -60,6 +64,7 @@
   2.2, and white on a tie. contrast-color() of CSS Color 5 may choose
   otherwise, since its measure is the browser's."
   [x]
-  (if (> (ratio x black) (ratio x white))
-    black
-    white))
+  (when (cc/colour x)
+    (if (> (ratio x black) (ratio x white))
+      black
+      white)))

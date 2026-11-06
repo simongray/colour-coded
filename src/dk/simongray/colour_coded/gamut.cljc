@@ -28,9 +28,10 @@
    (in-gamut? x :srgb))
   ([x space]
    (if-let [g (space/gamut space)]
-     (every? #(<= (- epsilon) (or % 0) (+ 1 epsilon))
-             (:coords (cc/to x g)))
-     (some? (cc/colour x)))))
+     (if-let [c (cc/to x g)]
+       (every? #(<= (- epsilon) (or % 0) (+ 1 epsilon)) (:coords c))
+       false)
+     (some? (cc/to x space)))))
 
 (defn clip
   "The colour `x` in the `space`, by default sRGB, with each channel
@@ -41,9 +42,9 @@
    (clip x :srgb))
   ([x space]
    (if-let [g (space/gamut space)]
-     (-> (cc/to x g)
-         (update :coords #(mapv (fn [v] (min 1.0 (max 0.0 (or v 0.0)))) %))
-         (cc/to space))
+     (some-> (cc/to x g)
+             (update :coords #(mapv (fn [v] (min 1.0 (max 0.0 (or v 0.0)))) %))
+             (cc/to space))
      (cc/to x space))))
 
 (defn- with-chroma
@@ -91,26 +92,30 @@
                    :else                             (recur lo chroma lo-in-gamut? clipped)))))))))))
 
 (defn reduce-chroma
-  "The colour `x` in the polar `space`, e.g. :lch or :oklch, with its chroma
-  lowered until it lies in the gamut of `gamut-space`, by default sRGB,
-  keeping its lightness and hue in that space exactly."
+  "The colour `x` in the polar `space`, e.g. :lch, by default OKLCH, with its
+  chroma lowered until it lies in the gamut of `gamut-space`, by default sRGB.
+  It keeps its lightness and hue in `space` exactly. For a `space` without a
+  chroma, e.g. :hsl, the result is nil."
+  ([x]
+   (reduce-chroma x :oklch))
   ([x space]
    (reduce-chroma x space :srgb))
   ([x space gamut-space]
-   (let [c (cc/to x space)]
-     (if (or (nil? c) (in-gamut? c gamut-space))
-       c
-       (loop [lo 0.0 hi (or (get-in c [:coords 1]) 0.0) n 0]
-         (let [mid (/ (+ lo hi) 2)]
-           (cond
-             (>= n 40)
-             (let [reduced (assoc-in c [:coords 1] lo)]
-               (if (in-gamut? reduced gamut-space)
-                 reduced
-                 (cc/to (clip reduced gamut-space) space)))
+   (when (space/coord-index space :c)
+     (let [c (cc/to x space)]
+       (if (or (nil? c) (in-gamut? c gamut-space))
+         c
+         (loop [lo 0.0 hi (or (get-in c [:coords 1]) 0.0) n 0]
+           (let [mid (/ (+ lo hi) 2)]
+             (cond
+               (>= n 40)
+               (let [reduced (assoc-in c [:coords 1] lo)]
+                 (if (in-gamut? reduced gamut-space)
+                   reduced
+                   (cc/to (clip reduced gamut-space) space)))
 
-             (in-gamut? (assoc-in c [:coords 1] mid) gamut-space)
-             (recur mid hi (inc n))
+               (in-gamut? (assoc-in c [:coords 1] mid) gamut-space)
+               (recur mid hi (inc n))
 
-             :else
-             (recur lo mid (inc n)))))))))
+               :else
+               (recur lo mid (inc n))))))))))

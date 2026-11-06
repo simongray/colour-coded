@@ -148,15 +148,15 @@
   1. Between the paper's steps, it interpolates the two nearest matrices,
   e.g. at 0.873 those of 0.8 and 0.9, weighing the latter by 0.73."
   [deficiency severity]
-  (let [ms (matrices deficiency)
-        s  (* 10 (min 1.0 (max 0.0 severity)))
-        i  (int s)
-        t  (- s i)]
-    (if (zero? t)
-      (ms i)
-      (mapv (fn [r1 r2] (mapv #(+ %1 (* t (- %2 %1))) r1 r2))
-            (ms i)
-            (ms (inc i))))))
+  (when-let [ms (get matrices deficiency)]
+    (let [s (* 10 (min 1.0 (max 0.0 severity)))
+          i (int s)
+          t (- s i)]
+      (if (zero? t)
+        (ms i)
+        (mapv (fn [r1 r2] (mapv #(+ %1 (* t (- %2 %1))) r1 r2))
+              (ms i)
+              (ms (inc i)))))))
 
 (defn simulate
   "The colour `x` as someone with the `deficiency` sees it, at the
@@ -169,7 +169,7 @@
   ([x deficiency]
    (simulate x deficiency 1.0))
   ([x deficiency severity]
-   (let [m (matrix deficiency severity)]
+   (when-let [m (matrix deficiency severity)]
      (some-> (cc/to x :srgb-linear)
              (update :coords #(->> (mapv (fn [v] (or v 0.0)) %)
                                    (space/multiply m)

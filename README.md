@@ -24,6 +24,8 @@ syntax of CSS.
 - **Ready for native apps.** React Native reads no `oklch()`, so you get
   hex colours too, and design tokens in the DTCG's format for Style
   Dictionary.
+- **Ready for e-paper.** Colours can land on the same grey on any
+  monochrome panel and keep their hue on a colour one.
 - **Colour theory as plain functions,** each citing its source: contrast,
   colour difference, harmonies, colours at a fixed lightness, colours found
   by the contrast they should have, the colours of an image, and colours
@@ -43,7 +45,7 @@ It requires Clojure 1.11+ and Java 11+. Add it from
 your `deps.edn`:
 
 ```clojure
-dk.simongray/colour-coded {:mvn/version "0.1.0"}
+dk.simongray/colour-coded {:mvn/version "0.2.0"}
 ```
 
 For unreleased changes, depend on the latest commit on `master` instead.
@@ -74,7 +76,7 @@ From an image
 ```
 
 `image/palette` gives the commonest colours of the image with their
-shares, and `image/colours` a small scheme of a background, text and an
+shares, and `image/scheme` a small scheme of a background, text and an
 accent for a player.
 
 
@@ -110,6 +112,85 @@ custom property, e.g. `--seed`, so that a page changes its theme by
 setting it. `theme/design-tokens` writes them as design tokens.
 
 
+On e-paper
+----------
+
+For a good palette on any e-reader, call `epaper/palette`. Take as many
+colours as you need from the front. They stay apart on a monochrome panel,
+on a colour panel and with a colour vision deficiency.
+
+```clojure
+(require '[dk.simongray.colour-coded.epaper :as epaper])
+
+;; for lines and fills
+(map (comp cc/hex :colour) (epaper/palette))
+;; => ("#003b78" "#ffc330" "#b3485b" "#5cadad")
+
+;; the same hues as pale backgrounds for black text
+(map (comp cc/hex :highlight) (epaper/palette))
+;; => ("#bddaff" "#f7daa1" "#ffccd1" "#9ceeee")
+
+;; the colours of a whole site or app
+(def paper (theme/from-seed "#24476b" theme/epaper-roles))
+
+;; each pair that must contrast, as a panel shows it
+(remove :ok? (theme/report paper epaper/ratio))
+;; => ()
+```
+
+An e-paper panel shows 16 greys, and nothing standardises how a device
+turns a colour into one of them: pure red comes out as 76 of 255 in
+PDFium, 54 in ImageMagick and 129 in MuPDF. A colour with a *shade* lands on
+the same one of the 16 whichever way a device converts it, so it looks the same
+on any monochrome panel. A colour panel still shows its hue. To give colours of
+your own a shade:
+
+```clojure
+;; a blue that can land on either of two shades
+(epaper/shades "#0072b2")
+;; => #{5 6}
+
+;; the same hue on one of them
+(cc/hex (epaper/at-shade "#0072b2" 5))
+;; => "#156396"
+
+;; a palette of your own, and whether it stays apart
+(def brand (epaper/palette [{:name :brand :colour "#24476b" :shade 3}
+                            {:name :accent :colour "#e8b931" :shade 12}]))
+
+(remove :ok? (epaper/report (map :colour brand)))
+;; => ()
+
+;; more chroma, if you know your device's conversion
+(cc/hex (epaper/at-shade "#0072b2" 5 [:pdf]))
+;; => "#0072b2"
+```
+
+Hues on one shade have the same grey, so they tell things apart on a colour
+panel at no cost on a monochrome one. To paint a grey drawing without
+changing it on a monochrome panel, `epaper/same-grey?` checks each colour
+against the grey it replaces. The tokens of `tone` take a shade too, e.g.
+`{:shade 5 :c 0.1}`. To see roughly how Carta or Kaleido 3 shows a colour, use
+`epaper/simulate`.
+
+Whichever colours you use:
+
+- Keep fine detail black. [Kaleido 3](https://www.eink.com/brand/detail/Kaleido3)
+  has half the resolution in colour, so a hue needs a fill, or a line of about
+  1 pt at reading size.
+- Don't rely on colour alone. [Okabe and Ito](https://jfly.uni-koeln.de/color/)
+  advise showing a difference by shape or line style too, which also survives
+  a black and white copy.
+- Give pale colours a black outline or a large area. They wash out on a colour
+  panel, and a
+  [Boox's Light Color Filter](https://ebookreader.dk/images/upload/Onyx%20BOOX%20Go%2010%203%20User%20Manual.pdf)
+  can turn them white.
+- Expect fewer greys in fast refresh modes. Rockchip's e-ink code makes shades
+  0 to 9 black and the rest white in A2 and DU.
+- Judge hues by eye, since a shade says nothing about how a hue looks, e.g.
+  yellow on a dark shade reads as olive or brown.
+
+
 Colours
 -------
 
@@ -138,6 +219,10 @@ function takes a CSS colour as well:
 ;; => "#15c000"
 ```
 
+The functions return nil for anything that isn't a colour, e.g.
+`(cc/hex "not a colour")`, and for a space or a panel that doesn't exist. A
+function of a list of colours skips what isn't one, but a report fails it.
+
 To check that a palette's colours stay apart for people with a colour
 vision deficiency:
 
@@ -157,8 +242,8 @@ These are the namespaces:
 
 - `colour-coded`, colours as maps, and `space`, `syntax`, `gamut`,
   `contrast`, `difference` (ΔEOK, CIE76 and CIEDE2000) and `mix`
-- `choose`, a seed from a palette, the first colour with enough contrast,
-  and colours set apart
+- `choose`, a seed from a list of colours, the first with enough contrast,
+  those set apart, and a small scheme for a UI
 - `harmony`, complements, triads and the rest, turned in OKLCH
 - `tone`, colours at a fixed lightness from one seed, and the worst
   contrast of a pair over every hue
@@ -167,6 +252,9 @@ These are the namespaces:
   thumbnails too
 - `vision`, colours as people with a protan, deutan or tritan deficiency
   see them, by Machado, Oliveira and Fernandes's model
+- `greyscale`, the greys that devices turn colours into
+- `epaper`, colours that land on one of a panel's 16 greys, and colours as
+  a panel shows them
 - `theme`, the colours of a site or an app
 
 Each namespace cites its sources in its docstring, and in the code where
@@ -180,6 +268,12 @@ These choices were made in building it, for review:
 
 - A colour is a map of :space, :coords and :alpha, the shape that
   Colour.js uses, and every function takes CSS strings too.
+- A function returns nil for what it can't use rather than guessing or
+  throwing, so a typo in a colour shows up as nil, not as black.
+- An image with no opaque pixels has no seed, so it has no theme. Pass a colour
+  of your own to `theme/from-seed` for that case.
+- `vision/simulate` has no default deficiency, since there's no general case
+  to assume. `vision/least-difference` checks them all.
 - The names spell "colour", "quantise" and "serialise" in British English
   throughout, but CSS's own words, e.g. color-mix(), keep CSS's spelling.
 - The parser is in `syntax`, since in ClojureScript a namespace called
@@ -196,6 +290,17 @@ These choices were made in building it, for review:
   a saturated colour a negative cone response, which makes its ΔEOK
   meaningless. The tritan simulation is the paper's approximation, which
   doesn't cover tritanopia.
+- By default `epaper` asks a colour to land on one grey by every conversion,
+  at some cost in chroma, since e-readers don't document theirs. You can pass
+  the conversions you know. They come from real PDF and image engines and from
+  open source code. No panel has confirmed a shade yet.
+- `epaper/palette` has four colours because no more fit 3 shades apart between
+  shades 3 and 12. Its hues start from Paul Tol's high-contrast scheme, which he
+  made for a monochrome printout. The hues, the thresholds of `epaper/report`
+  and the number of colours are judgements, untested on readers.
+- The numbers for Kaleido 3 in `epaper/panels` are estimates, since E Ink
+  publishes none and I found no measurements. Gallery 3 is left out for the
+  same reason.
 
 Material 3's HCT and dynamic schemes, ramps, data palettes and historic
 colour theory are still to come.
@@ -241,6 +346,9 @@ To run them in Node:
 clojure -M:cljs compile test
 ```
 
+The root namespace's docstring states the rules that every namespace keeps to,
+and `api_test.cljc` tests them. Add a new function to its tables.
+
 The tests compare the library with Colour.js, whose values are in
 `test/resources/colorjs.json`, and with the computed values of the
 web-platform-tests of CSS Color, in `test/resources/wpt.json`. To write
@@ -263,6 +371,20 @@ python3 -m venv .venv
 .venv/bin/pip install colour-science
 .venv/bin/python dev/machado.py
 ```
+
+The tests of `greyscale` compare it with the greys that MuPDF, PDFium,
+Poppler, Pillow and ImageMagick render, which are in
+`test/resources/greyscale.json`. To write those again, with Poppler and
+ImageMagick installed:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install pymupdf pypdfium2 pillow
+.venv/bin/python dev/greyscale.py
+```
+
+ClojureScript inlines the fixtures when it compiles, so delete `.shadow-cljs`
+before you run the tests in Node after writing one again.
 
 
 Licence

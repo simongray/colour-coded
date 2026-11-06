@@ -28,22 +28,31 @@
           (>= (contrast/ratio (at-lightness x mid) background) r) (recur near mid (inc n))
           :else                                              (recur mid far (inc n)))))))
 
+;; WCAG 2.2, success criterion 1.4.3
 (defn at-contrast
   "The colour `x` at the OKLCH lightness where its contrast ratio with the
-  `background` is `r`, or just over, keeping its hue and as much chroma as
-  sRGB allows, or nil where no lightness reaches `r`. Of a darker and a
-  lighter answer, it's the one whose lightness is nearer to that of `x`."
-  [x background r]
-  (let [l-bg      (or (get-in (cc/to background :oklch) [:coords 0]) 0.0)
-        l-x       (or (get-in (cc/to x :oklch) [:coords 0]) 0.0)
-        lightness (->> [(search x background r l-bg 0.0) (search x background r l-bg 1.0)]
-                       (remove nil?)
-                       (sort-by #(abs (- % l-x)))
-                       first)]
-    (some->> lightness (at-lightness x))))
+  `background` is `r` or just over, or nil where no lightness reaches `r`. By
+  default `r` is 4.5, which WCAG 2.2 asks of text. The colour keeps its hue and
+  as much chroma as sRGB allows. Where a darker and a lighter colour would both
+  do, it's the one nearer the lightness of `x`."
+  ([x background]
+   (at-contrast x background 4.5))
+  ([x background r]
+   (when (and (cc/colour x) (cc/colour background))
+     (let [l-bg      (or (get-in (cc/to background :oklch) [:coords 0]) 0.0)
+           l-x       (or (get-in (cc/to x :oklch) [:coords 0]) 0.0)
+           lightness (->> [(search x background r l-bg 0.0) (search x background r l-bg 1.0)]
+                          (remove nil?)
+                          (sort-by #(abs (- % l-x)))
+                          first)]
+       (some->> lightness (at-lightness x))))))
 
 (defn scale
   "The colour `x` at each contrast ratio of `rs` with the `background`, as
-  at-contrast finds it, e.g. a ramp of a brand colour from [1.5 3 4.5 7]."
-  [x background rs]
-  (mapv #(at-contrast x background %) rs))
+  at-contrast finds it. By default the ratios are [1.5 3 4.5 7], a ramp from a
+  decoration to AAA's text."
+  ([x background]
+   (scale x background [1.5 3 4.5 7]))
+  ([x background rs]
+   (when (and (cc/colour x) (cc/colour background))
+     (mapv #(at-contrast x background %) rs))))

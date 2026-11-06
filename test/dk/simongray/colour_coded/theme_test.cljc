@@ -2,7 +2,52 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [dk.simongray.colour-coded :as cc]
+            [dk.simongray.colour-coded.epaper :as epaper]
+            [dk.simongray.colour-coded.test-data :as data]
             [dk.simongray.colour-coded.theme :as theme]))
+
+(def seeds
+  "Seeds of many hues and chromas."
+  (for [h      (range 0 360 30)
+        chroma [0 0.05 0.12 0.25 0.37]]
+    {:space :oklch :coords [0.6 chroma h]}))
+
+(deftest epaper-roles-land-on-their-shades
+  (doseq [seed                 seeds
+          :let                 [t (theme/from-seed seed theme/epaper-roles)]
+          [level appearances]  (select-keys t [:standard :more])
+          [appearance colours] appearances
+          [role colour]        colours]
+    (is (= (get-in theme/epaper-roles [level appearance role :shade])
+           (epaper/shade colour))
+        (str seed " " level " " appearance " " role))))
+
+(deftest epaper-roles-contrast-on-a-panel
+  (doseq [seed seeds
+          :let [t (theme/from-seed seed theme/epaper-roles)]]
+    (is (empty? (remove :ok? (theme/report t)))
+        (str seed " on a screen"))
+    (is (empty? (remove :ok? (theme/report t epaper/ratio)))
+        (str seed " on Carta"))
+    (is (empty? (->> (theme/report t #(epaper/ratio %1 %2 :kaleido-3))
+                     (filter #(= :standard (:level %)))
+                     (remove :ok?)))
+        (str seed " on Kaleido 3, which can't reach the level :more"))))
+
+(deftest epaper-roles-keep-a-seeds-hue
+  (let [{:keys [background text]} (:light (theme/hex (theme/from-seed "#24476b" theme/epaper-roles)))]
+    (is (= "#ffffff" background))
+    (is (= "#000000" text)))
+  (doseq [h    (range 0 360 30)
+          :let [seed   {:space :oklch :coords [0.6 0.12 h] :alpha 1.0}
+                accent (get-in (theme/from-seed seed theme/epaper-roles) [:standard :light :accent])]]
+    (is (data/same-hue? 6 h (get-in (cc/to accent :oklch) [:coords 2]))
+        (str "the accent keeps hue " h ", as " (cc/hex accent)))))
+
+(deftest epaper-roles-write-css
+  (let [t (theme/from-seed "#24476b" theme/epaper-roles)]
+    (is (str/includes? (theme/css t) "--border: light-dark(#666666, #aaaaaa);"))
+    (is (str/includes? (theme/relative-css "--seed" theme/epaper-roles) "--accent: light-dark(oklch(from var(--seed)"))))
 
 (deftest every-pair-contrasts-whatever-the-seed
   (doseq [h      (range 0 360 10)

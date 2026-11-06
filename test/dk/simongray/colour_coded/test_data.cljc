@@ -11,7 +11,9 @@
     https://hajim.rochester.edu/ece/sites/gsharma/ciede2000/
   - machado2009.json, the matrices of Machado, Oliveira and Fernandes
     (2009) and what colour-science computes with them, which
-    dev/machado.py writes"
+    dev/machado.py writes
+  - greyscale.json, the greys that real PDF and image engines give a fixed
+    set of colours, which dev/greyscale.py writes"
   #?(:clj  (:require [clojure.data.json :as json]
                      [clojure.java.io :as io]
                      [clojure.string :as str])
@@ -55,6 +57,11 @@
   "The \"matrices\" of Machado, Oliveira and Fernandes for each deficiency,
   and the \"simulations\" of colour-science for a fixed set of colours."
   (json (resource "machado2009.json")))
+
+(def greyscale
+  "The \"colours\" that the engines rendered, and the \"engines\", each with
+  the \"conversion\" that should match it and the \"greys\" it gave them."
+  (json (resource "greyscale.json")))
 
 (defn fixture-colour
   "The colour of a fixture of Colour.js `m`, a map of its space, by

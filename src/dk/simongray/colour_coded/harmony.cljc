@@ -15,13 +15,14 @@
   (:require [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.space :as space]))
 
-(defn rotate
+(defn turn
   "The colour `x` with its hue turned by `degrees`, in the polar `space`, by
-  default OKLCH, e.g. :hsl to turn it as most colour pickers do."
+  default OKLCH, e.g. :hsl to turn it as most colour pickers do. It's nil for a
+  space without a hue."
   ([x degrees]
-   (rotate x degrees :oklch))
+   (turn x degrees :oklch))
   ([x degrees space]
-   (let [i (space/hue-index space)]
+   (when-let [i (space/hue-index space)]
      (some-> (cc/to x space)
              (update-in [:coords i] #(when % (mod (+ % degrees) 360)))))))
 
@@ -31,7 +32,8 @@
   ([x degrees]
    (turns x degrees :oklch))
   ([x degrees space]
-   (mapv #(rotate x % space) (cons 0 degrees))))
+   (when (turn x 0 space)
+     (mapv #(turn x % space) (cons 0 degrees)))))
 
 (defn complement
   "The colour `x` with its hue turned halfway round, in the polar `space`,
@@ -39,7 +41,7 @@
   ([x]
    (complement x :oklch))
   ([x space]
-   (rotate x 180 space)))
+   (turn x 180 space)))
 
 (defn analogous
   "The colour `x` and its neighbours, 30° to either side, in the `space`."

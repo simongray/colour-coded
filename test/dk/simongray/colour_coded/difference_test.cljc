@@ -20,9 +20,9 @@
       (is (data/close? 1e-9 (get d k) (f (data/fixture-colour a) (data/fixture-colour b)))))))
 
 (deftest nearest
-  (is (= "orange" (difference/nearest "#ff9900" ["red" "orange" "yellow"])))
-  (is (= "red" (difference/nearest "#dd1100" ["red" "orange" "yellow"] difference/delta-e-2000)))
-  (is (nil? (difference/nearest "red" []))))
+  (is (= "orange" (difference/nearest ["red" "orange" "yellow"] "#ff9900")))
+  (is (= "red" (difference/nearest ["red" "orange" "yellow"] "#dd1100" difference/delta-e-2000)))
+  (is (nil? (difference/nearest [] "red"))))
 
 (deftest least
   (is (= (difference/delta-e "orange" "#ff9900")
