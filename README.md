@@ -45,7 +45,7 @@ It requires Clojure 1.11+ and Java 11+. Add it from
 your `deps.edn`:
 
 ```clojure
-dk.simongray/colour-coded {:mvn/version "0.1.0"}
+dk.simongray/colour-coded {:mvn/version "0.2.0"}
 ```
 
 For unreleased changes, depend on the latest commit on `master` instead.
