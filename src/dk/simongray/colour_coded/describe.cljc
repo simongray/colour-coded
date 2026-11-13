@@ -6,7 +6,8 @@
   contrast/black-or-white makes between the two. They contrast equally at a
   relative luminance of about 0.179, just under an L* of 50. Taking that for
   the line between dark and light is a judgement: Material prefers white text
-  on any tone below 60.
+  on any tone below 60. A translucent colour is as dark as it shows on a
+  canvas, which is white unless another is given, as in contrast/ratio.
 
   The names are the named colours of CSS Color 4, unless others are given.
   The specification says itself that they're spread unevenly over sRGB and
@@ -24,16 +25,22 @@
             [dk.simongray.colour-coded.syntax :as syntax]))
 
 (defn dark?
-  "Whether the colour `x` is dark, i.e. white text has more contrast with it
-  than black text, or as much."
-  [x]
-  (= contrast/white (contrast/black-or-white x)))
+  "Whether the colour `x` is dark, i.e. white text has more contrast on it
+  than black text, or as much. A translucent `x` lies on the `canvas`, by
+  default white, as in contrast/ratio, so it's as dark as it shows there."
+  ([x]
+   (dark? x contrast/white))
+  ([x canvas]
+   (= contrast/white (contrast/black-or-white x canvas))))
 
 (defn light?
-  "Whether the colour `x` is light, i.e. black text has more contrast with it
-  than white text."
-  [x]
-  (= contrast/black (contrast/black-or-white x)))
+  "Whether the colour `x` is light, i.e. black text has more contrast on it
+  than white text. A translucent `x` lies on the `canvas`, by default white,
+  as in contrast/ratio, so it's as light as it shows there."
+  ([x]
+   (light? x contrast/white))
+  ([x canvas]
+   (= contrast/black (contrast/black-or-white x canvas))))
 
 ;; CSS Color 4, section 6.1, has two names for some colours, e.g. gray and
 ;; grey. min-key returns the last of equals, so sorting the names makes it
@@ -57,6 +64,8 @@
 
 (comment
   (dark? "#24476b")
+  (dark? "rgb(0 0 0 / 0.2)")
+  (dark? "rgb(0 0 0 / 0.2)" "black")
   (name "#24476b")
   (difference/delta-e "#24476b" (name "#24476b"))
   (name "#24476b" {"navy" "#000080" "sky" "#87ceeb"})

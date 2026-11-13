@@ -10,6 +10,11 @@
   (is (describe/light? "#ffd000"))
   (testing "black and white text contrast equally between these greys"
     (is (= [true false] (map describe/dark? ["#757575" "#767676"]))))
+  (testing "a translucent colour is as dark as it shows on the canvas"
+    (is (describe/light? "rgb(0 0 0 / 0.2)") "a light grey on white")
+    (is (describe/dark? "rgb(0 0 0 / 0.2)" "black"))
+    (is (describe/dark? "rgb(255 255 255 / 0.2)" "#16181a"))
+    (is (describe/light? "rgb(255 255 255 / 0.2)")))
   (testing "a colour is one or the other, as white or black text contrasts more"
     (doseq [hex (vals syntax/named-colours)]
       (is (not= (describe/dark? hex) (describe/light? hex)) hex)

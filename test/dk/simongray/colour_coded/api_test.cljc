@@ -119,7 +119,9 @@
                     "gamut/in-gamut? of an unbounded space" #(gamut/in-gamut? % :oklab)
                     "choose/chromatic?"    choose/chromatic?
                     "describe/dark?"       describe/dark?
+                    "describe/dark? canvas" #(describe/dark? "red" %)
                     "describe/light?"      describe/light?
+                    "describe/light? canvas" #(describe/light? "red" %)
                     "epaper/same-grey?"    #(epaper/same-grey? % "red")}
           x        not-colours]
     (is (false? (f x)) (str name " of " (pr-str x)))))
@@ -247,7 +249,11 @@
     (is (= (contrast/wcag-level "red" "rgb(0 0 0 / 50%)" "white")
            (contrast/wcag-level "red" "rgb(0 0 0 / 50%)")))
     (is (= (contrast/black-or-white "rgb(0 0 0 / 50%)" "white")
-           (contrast/black-or-white "rgb(0 0 0 / 50%)"))))
+           (contrast/black-or-white "rgb(0 0 0 / 50%)")))
+    (is (= (describe/dark? "rgb(0 0 0 / 50%)" "white")
+           (describe/dark? "rgb(0 0 0 / 50%)")))
+    (is (= (describe/light? "rgb(0 0 0 / 50%)" "white")
+           (describe/light? "rgb(0 0 0 / 50%)"))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))
