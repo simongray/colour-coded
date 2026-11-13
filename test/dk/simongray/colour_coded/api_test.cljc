@@ -78,10 +78,10 @@
    "harmony/triad"           harmony/triad
    "harmony/square"          harmony/square
    "harmony/wheel"           #(harmony/wheel % 3)
-   "tone/unmapped"           #(tone/unmapped {:l 0.5} %)
-   "tone/tone"               #(tone/tone {:l 0.5} %)
-   "tone/tone on a shade"    #(tone/tone {:shade 5} %)
-   "tone/tones"              #(tone/tones {:a {:l 0.5}} %)
+   "tone/unmapped"           #(tone/unmapped % {:l 0.5})
+   "tone/tone"               #(tone/tone % {:l 0.5})
+   "tone/tone on a shade"    #(tone/tone % {:shade 5})
+   "tone/tones"              #(tone/tones % {:a {:l 0.5}})
    "target/at-contrast x"    #(target/at-contrast % "white")
    "target/at-contrast background" #(target/at-contrast "red" %)
    "target/scale"            #(target/scale % "white")
@@ -154,9 +154,9 @@
   (testing "a token that has no lightness or no chroma to take"
     (doseq [token [{} {:shade 16} {:space :nope :l 0.5} {:space :srgb :l 0.5} {:space :hsl :l 50}]]
       (is (nil? (tone/lightness token)) (pr-str token))
-      (is (nil? (tone/unmapped token "red")) (pr-str token))
-      (is (nil? (tone/tone token "red")) (pr-str token))
-      (is (nil? (tone/relative-css token "--seed")) (pr-str token))
+      (is (nil? (tone/unmapped "red" token)) (pr-str token))
+      (is (nil? (tone/tone "red" token)) (pr-str token))
+      (is (nil? (tone/relative-css "--seed" token)) (pr-str token))
       (is (nil? (tone/worst-contrast token {:l 0.9})) (pr-str token))
       (is (nil? (tone/worst-contrast {:l 0.9} token)) (pr-str token))))
   (testing "a component"

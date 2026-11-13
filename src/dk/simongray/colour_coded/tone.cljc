@@ -40,7 +40,7 @@
 (defn unmapped
   "The colour that the `token` takes from the `seed`, in the token's space,
   which may lie outside sRGB."
-  [{:keys [space c turn] :or {space :oklch turn 0} :as token} seed]
+  [seed {:keys [space c turn] :or {space :oklch turn 0} :as token}]
   (when-let [l (lightness token)]
     (when-let [{[_ chroma hue] :coords} (cc/to seed space)]
       {:space  space
@@ -54,8 +54,8 @@
   with its chroma lowered until it lies in sRGB, so that its lightness and
   hue stay those of the token. With a :shade, it's the colour on that shade
   by epaper/at-shade instead, in sRGB."
-  [{:keys [shade] :as token} seed]
-  (when-let [colour (unmapped token seed)]
+  [seed {:keys [shade] :as token}]
+  (when-let [colour (unmapped seed token)]
     (if shade
       (epaper/at-shade colour shade)
       (gamut/reduce-chroma colour (:space token :oklch)))))
@@ -63,9 +63,9 @@
 (defn tones
   "The colours that the map of `tokens` takes from the `seed`, by the same
   keys."
-  [tokens seed]
+  [seed tokens]
   (when (cc/colour seed)
-    (update-vals tokens #(tone % seed))))
+    (update-vals tokens #(tone seed %))))
 
 (defn relative-css
   "The `token` as a relative colour of CSS from the custom property `prop`,
@@ -74,7 +74,7 @@
   takes the lightness of that shade's grey, but its colour usually lands a shade
   or two away, since only epaper/at-shade searches for a colour that lands
   there."
-  [{:keys [space c turn] :or {space :oklch turn 0} :as token} prop]
+  [prop {:keys [space c turn] :or {space :oklch turn 0} :as token}]
   (when-let [l (lightness token)]
     (let [n syntax/format-number]
       (str (name space) "(from var(" prop ") "
@@ -97,7 +97,7 @@
                chroma (map #(* 0.04 %) (range 11))
                :let   [seed {:space :oklch :coords [0.5 chroma h] :alpha 1.0}]
                [g f]  [[:map tone] [:clip #(gamut/clip (unmapped %1 %2))]]]
-           {:ratio  (contrast/ratio (f a seed) (f b seed))
+           {:ratio  (contrast/ratio (f seed a) (f seed b))
             :hue    h
             :chroma chroma
             :gamut  g})
@@ -106,7 +106,7 @@
 (comment
   (def bar {:l 0.33 :c 0.1 :turn 180})
   (def on-bar {:l 0.97 :c 0.012 :turn 180})
-  (cc/hex (tone bar "#a90000"))
-  (relative-css bar "--seed")
+  (cc/hex (tone "#a90000" bar))
+  (relative-css "--seed" bar)
   (worst-contrast on-bar bar)
   #_.)

@@ -402,7 +402,7 @@
   ["#c8382d" "#e8b931" "#2e8b57" "#2b4c9b" "#7b2cbf" "#808080"])
 
 (def bars
-  (map #(tone/tones bar-tokens %) bar-seeds))
+  (map #(tone/tones % bar-tokens) bar-seeds))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (wide (row (map bar bar-seeds bars)))
@@ -410,7 +410,7 @@
 ;; In CSS, each token derives from one custom property:
 
 (def bar-css
-  (update-vals bar-tokens #(tone/relative-css % "--seed")))
+  (update-vals bar-tokens #(tone/relative-css "--seed" %)))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (code (str/join "\n" (for [[k v] bar-css] (str "--" (name k) ": " v ";"))))
@@ -442,7 +442,7 @@
         :let [seed {:space :oklch :coords [0.6 0.2 h]}]]
     {:hue    h
      :tokens n
-     :ratio  (contrast/ratio (tone/tone token seed) "white")}))
+     :ratio  (contrast/ratio (tone/tone seed token) "white")}))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (clerk/vl

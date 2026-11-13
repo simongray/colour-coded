@@ -99,7 +99,7 @@ The tokens of `tone` take a shade in place of a lightness.
 ```clojure
 (require '[dk.simongray.colour-coded.tone :as tone])
 
-(cc/hex (tone/tone {:shade 5 :c 0.1} "#a90000"))
+(cc/hex (tone/tone "#a90000" {:shade 5 :c 0.1}))
 ;; => "#8a4239"
 ```
 

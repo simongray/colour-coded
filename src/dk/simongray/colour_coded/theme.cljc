@@ -179,7 +179,7 @@
    (when-let [seed (cc/colour seed)]
      (into {:seed seed}
            (for [[level appearances] roles]
-             [level (update-vals appearances #(tone/tones % seed))])))))
+             [level (update-vals appearances #(tone/tones seed %))])))))
 
 (defn from-pixels
   "The theme of the image whose `pixels` are vectors of red, green, blue and
@@ -278,7 +278,7 @@
     (for [d     (range 0 100.5 0.5)
           l     (distinct [(- own d) (+ own d)])
           :when (<= 0 l 100)]
-      (tone/tone {:space :lch :l l} seed))))
+      (tone/tone seed {:space :lch :l l}))))
 
 ;; WCAG 2.2 exempts a logotype from 1.4.3, but not a colour that brand
 ;; guidelines ask for, so a brand's colour only stays where it contrasts.
@@ -383,7 +383,7 @@
   ([prop roles]
    (relative-css prop roles {}))
   ([prop roles opts]
-   (stylesheet roles #(tone/relative-css % prop) opts)))
+   (stylesheet roles #(tone/relative-css prop %) opts)))
 
 ;; The Design Tokens Format Module 2025.10, sections 8.1 and 9.2
 ;; https://www.w3.org/community/reports/design-tokens/CG-FINAL-format-20251028/

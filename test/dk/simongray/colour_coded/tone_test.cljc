@@ -14,7 +14,7 @@
 (def bar-rule {:l 0.68 :c 0.05 :turn 180})
 
 (deftest a-token-of-a-seed
-  (let [c (tone/tone bar "#a90000")
+  (let [c (tone/tone "#a90000" bar)
         [l chroma h] (:coords c)]
     (is (gamut/in-gamut? c))
     (is (data/close? 1e-9 0.33 l) "at its lightness")
@@ -23,8 +23,8 @@
         "and its hue turned")))
 
 (deftest relative-css
-  (is (= "oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180))" (tone/relative-css bar "--seed")))
-  (is (= "lch(from var(--seed) 40 min(c, 60) h)" (tone/relative-css {:space :lch :l 40 :c 60} "--seed"))))
+  (is (= "oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180))" (tone/relative-css "--seed" bar)))
+  (is (= "lch(from var(--seed) 40 min(c, 60) h)" (tone/relative-css "--seed" {:space :lch :l 40 :c 60}))))
 
 (deftest the-contrast-of-the-bars-holds-at-every-hue
   (is (<= 10 (:ratio (tone/worst-contrast on-bar bar))))
@@ -35,7 +35,7 @@
   (let [ratios (fn [a b]
                  (for [h (range 0 360 5)
                        :let [seed {:space :oklch :coords [0.6 0.2 h]}]]
-                   (contrast/ratio (tone/tone a seed) (tone/tone b seed))))
+                   (contrast/ratio (tone/tone seed a) (tone/tone seed b))))
         spread #(/ (apply max %) (apply min %))]
     (is (< (spread (ratios {:space :lch :l 40 :c 6} {:space :lch :l 100 :c 0})) 1.01)
         "within a percent for a near-grey")
@@ -48,19 +48,19 @@
   (doseq [seed  ["#24476b" "#a90000" "#00a000" "grey"]
           token [{:shade 5} {:shade 5 :c 0.1} {:shade 12 :c 0.1 :turn 180}
                  {:shade 5 :c 30 :space :lch}]]
-    (is (= (:shade token) (epaper/shade (tone/tone token seed)))
+    (is (= (:shade token) (epaper/shade (tone/tone seed token)))
         (str seed " " token)))
-  (is (= "#ffffff" (cc/hex (tone/tone {:shade 15 :c 0} "red"))))
-  (is (= {:a "#555555"} (update-vals (tone/tones {:a {:shade 5 :c 0}} "red") cc/hex))))
+  (is (= "#ffffff" (cc/hex (tone/tone "red" {:shade 15 :c 0}))))
+  (is (= {:a "#555555"} (update-vals (tone/tones "red" {:a {:shade 5 :c 0}}) cc/hex))))
 
 (deftest relative-css-of-a-shade
   (is (= "oklch(from var(--seed) 44.9533% min(c, 0.1) h)"
-         (tone/relative-css {:shade 5 :c 0.1} "--seed"))
+         (tone/relative-css "--seed" {:shade 5 :c 0.1}))
       "the lightness of the shade's grey")
   (testing "it lands within a shade or two, by the clipping of a browser"
     (doseq [shade [3 4 5 8 12]
             hue   (range 0 360 30)
             :let  [seed   {:space :oklch :coords [0.5 0.3 hue] :alpha 1.0}
-                   colour (gamut/clip (tone/unmapped {:shade shade :c 0.12} seed))]
+                   colour (gamut/clip (tone/unmapped seed {:shade shade :c 0.12}))]
             s     (epaper/shades colour)]
       (is (<= (abs (- s shade)) 2) (str "shade " shade " at hue " hue)))))
