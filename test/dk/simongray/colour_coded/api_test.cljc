@@ -46,9 +46,12 @@
    "contrast/luminance"      contrast/luminance
    "contrast/ratio a"        #(contrast/ratio % "white")
    "contrast/ratio b"        #(contrast/ratio "white" %)
+   "contrast/ratio canvas"   #(contrast/ratio "red" "white" %)
    "contrast/wcag-level a"   #(contrast/wcag-level % "white")
    "contrast/wcag-level b"   #(contrast/wcag-level "white" %)
+   "contrast/wcag-level canvas" #(contrast/wcag-level "red" "white" %)
    "contrast/black-or-white" contrast/black-or-white
+   "contrast/black-or-white canvas" #(contrast/black-or-white "red" %)
    "difference/delta-e a"    #(difference/delta-e % "white")
    "difference/delta-e b"    #(difference/delta-e "white" %)
    "difference/delta-e-ok2"  #(difference/delta-e-ok2 % "white")
@@ -220,6 +223,13 @@
   (testing "sRGB, where a browser composites the colours of sRGB"
     (is (= (composite/over "rgb(255 0 0 / 50%)" "blue" :srgb)
            (composite/over "rgb(255 0 0 / 50%)" "blue"))))
+  (testing "a white canvas, which WCAG assumes where no background is specified"
+    (is (= (contrast/ratio "red" "rgb(0 0 0 / 50%)" "white")
+           (contrast/ratio "red" "rgb(0 0 0 / 50%)")))
+    (is (= (contrast/wcag-level "red" "rgb(0 0 0 / 50%)" "white")
+           (contrast/wcag-level "red" "rgb(0 0 0 / 50%)")))
+    (is (= (contrast/black-or-white "rgb(0 0 0 / 50%)" "white")
+           (contrast/black-or-white "rgb(0 0 0 / 50%)"))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))

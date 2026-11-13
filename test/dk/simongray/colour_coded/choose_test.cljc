@@ -34,7 +34,11 @@
   (is (= "#f0c040" (choose/first-with-contrast ["#1a1a1a" "#f0c040"] "#a90000" 3))
       "the first that stands apart from the background, as podcast-clj's accent")
   (is (nil? (choose/first-with-contrast ["#a01010"] "#a90000" 3)))
-  (is (= "white" (choose/most-contrast ["#808080" "white" "#a90000"] "#24476b"))))
+  (is (= "white" (choose/most-contrast ["#808080" "white" "#a90000"] "#24476b")))
+  (is (= "rgb(0 0 0 / 0.8)"
+         (choose/first-with-contrast ["rgb(0 0 0 / 0.3)" "rgb(0 0 0 / 0.8)"] "white"))
+      "a translucent colour as it shows on the background")
+  (is (= "#555555" (choose/most-contrast ["rgb(0 0 0 / 0.3)" "#555555"] "white"))))
 
 (deftest spreading
   (is (= ["#2040a0" "#c03020"] (choose/spread ["#2040a0" "#2448a4" "#c03020"] 0.05))

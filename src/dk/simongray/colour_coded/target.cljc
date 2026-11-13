@@ -5,6 +5,7 @@
   different contrast at each hue.
   https://github.com/adobe/leonardo"
   (:require [dk.simongray.colour-coded :as cc]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.gamut :as gamut]))
 
@@ -34,18 +35,20 @@
   `background` is `r` or just over, or nil where no lightness reaches `r`. By
   default `r` is 4.5, which WCAG 2.2 asks of text. The colour keeps its hue and
   as much chroma as sRGB allows. Where a darker and a lighter colour would both
-  do, it's the one nearer the lightness of `x`."
+  do, it's the one nearer the lightness of `x`. A translucent `background`
+  lies on white, as in contrast/ratio."
   ([x background]
    (at-contrast x background 4.5))
   ([x background r]
-   (when (and (cc/colour x) (cc/colour background))
-     (let [l-bg      (or (get-in (cc/to background :oklch) [:coords 0]) 0.0)
-           l-x       (or (get-in (cc/to x :oklch) [:coords 0]) 0.0)
-           lightness (->> [(search x background r l-bg 0.0) (search x background r l-bg 1.0)]
-                          (remove nil?)
-                          (sort-by #(abs (- % l-x)))
-                          first)]
-       (some->> lightness (at-lightness x))))))
+   (let [ground (composite/over background contrast/white)]
+     (when (and (cc/colour x) ground)
+       (let [l-bg      (or (get-in (cc/to ground :oklch) [:coords 0]) 0.0)
+             l-x       (or (get-in (cc/to x :oklch) [:coords 0]) 0.0)
+             lightness (->> [(search x ground r l-bg 0.0) (search x ground r l-bg 1.0)]
+                            (remove nil?)
+                            (sort-by #(abs (- % l-x)))
+                            first)]
+         (some->> lightness (at-lightness x)))))))
 
 (defn scale
   "The colour `x` at each contrast ratio of `rs` with the `background`, as

@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is testing]]
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -258,7 +259,10 @@
   (is (data/close? 1e-3 9.0 (epaper/ratio "black" "white" :carta)))
   (is (< (epaper/ratio "black" "white" :kaleido-3) 7))
   (is (> (epaper/ratio "#555555" "white" :carta) 4.5))
-  (is (< (epaper/ratio "#555555" "white" :kaleido-3) 4.5)))
+  (is (< (epaper/ratio "#555555" "white" :kaleido-3) 4.5))
+  (is (= (epaper/ratio (composite/over "rgb(0 0 0 / 0.3)" "white") "white")
+         (epaper/ratio "rgb(0 0 0 / 0.3)" "white"))
+      "a translucent colour as it shows, which is what a panel gets"))
 
 (deftest the-palette
   (let [p (epaper/palette)]

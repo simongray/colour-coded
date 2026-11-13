@@ -14,6 +14,16 @@
     (is (data/same-hue? 3 (get-in (cc/to x :oklch) [:coords 2]) (get-in (cc/to c :oklch) [:coords 2]))
         "at the colour's own hue")))
 
+(deftest translucent-colours
+  (let [bg "rgb(0 0 0 / 0.2)"]
+    (is (data/close? 0.01 4.5 (contrast/ratio (target/at-contrast "#888888" bg) bg))
+        "a background as it shows on white"))
+  (let [c (target/at-contrast "rgb(136 136 136 / 0.9)" "white")]
+    (is (= 0.9 (:alpha c)))
+    (is (data/close? 0.01 4.5 (contrast/ratio c "white")) "a colour as it shows"))
+  (is (nil? (target/at-contrast "rgb(136 136 136 / 0.3)" "white"))
+      "or nil, where it's too faint at any lightness"))
+
 (deftest unreachable-contrast
   (is (nil? (target/at-contrast "red" "#777777" 7)) "a mid grey is 4.5 at most from black or white"))
 

@@ -41,14 +41,14 @@
   ([xs background]
    (first-with-contrast xs background 4.5))
   ([xs background r]
-   (first (filter #(when-let [own (contrast/ratio background %)] (>= own r)) xs))))
+   (first (filter #(when-let [own (contrast/ratio % background)] (>= own r)) xs))))
 
 (defn most-contrast
   "The colour of `xs` that contrasts most with the `background`."
   [xs background]
-  (let [colours (filter #(contrast/ratio background %) xs)]
+  (let [colours (filter #(contrast/ratio % background) xs)]
     (when (seq colours)
-      (apply max-key #(contrast/ratio background %) colours))))
+      (apply max-key #(contrast/ratio % background) colours))))
 
 (defn spread
   "The colours of `xs` that differ from every colour kept before them by a ΔEOK

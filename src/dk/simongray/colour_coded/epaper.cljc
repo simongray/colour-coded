@@ -28,6 +28,7 @@
   https://github.com/TinkerBoard-Android/rockchip-android-hardware-rk35-einkhwc
   https://github.com/koreader/koreader-base/blob/master/ffi/blitbuffer.lua"
   (:require [dk.simongray.colour-coded :as cc]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -269,17 +270,23 @@
           :alpha  (:alpha c)})))))
 
 (defn ratio
-  "The contrast ratio of the colours `a` and `b` as the `panel`, by default
+  "The contrast ratio of the colour `a` on `b` as the `panel`, by default
   :carta, shows them by the `conversion`, by default
   greyscale/default-conversion. It uses WCAG's formula, which allows for a
   screen's flare, so it's on the cautious side: black on white is 9 on a panel
-  with a contrast of 15."
+  with a contrast of 15.
+
+  A panel gets a translucent colour already flattened, so this flattens it
+  first, with `b` on white, as contrast/ratio does."
   ([a b]
    (ratio a b :carta))
   ([a b panel]
    (ratio a b panel greyscale/default-conversion))
   ([a b panel conversion]
-   (contrast/ratio (simulate a panel conversion) (simulate b panel conversion))))
+   (let [ground (composite/over b contrast/white)
+         text   (composite/over a ground)]
+     (contrast/ratio (simulate text panel conversion)
+                     (simulate ground panel conversion)))))
 
 ;; The first three are the blue, yellow and red of Paul Tol's high-contrast
 ;; scheme, which he made for a monochrome printout, but his colours can each
