@@ -22,6 +22,11 @@ the function `css` of the root namespace. The names spell "colour", "quantise" a
 "serialise" in British English throughout, but CSS's own words, e.g. `color-mix()`,
 keep CSS's spelling.
 
+`composite/over` composites in sRGB by default, where `mix/mix` mixes in Oklab. CSS
+names Oklab for `color-mix()`, but no space for compositing. The W3C's ACT rule for the
+contrast of text composites translucent text in sRGB, to judge by the ratios of its
+examples, so that's the default.
+
 
 ## Bad input
 

@@ -8,6 +8,7 @@ nothing, so this can't be Clojure. Nothing in src or CI runs it.
 
 ColorAide only composites in XYZ and in spaces of red, green and blue, so
 the tests cover Oklab and Lab without it.
+https://facelessuser.github.io/coloraide/compositing/
 
     python3 -m venv .venv
     .venv/bin/pip install coloraide
