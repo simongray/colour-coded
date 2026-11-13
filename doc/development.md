@@ -58,3 +58,14 @@ python3 -m venv .venv
 .venv/bin/pip install pymupdf pypdfium2 pillow
 .venv/bin/python dev/greyscale.py
 ```
+
+`composite.json` holds what ColorAide computes when it composites one colour over
+another, for `composite`. The script is Python because Colour.js doesn't composite, and
+a fixture that the library wrote itself would test nothing. It only writes test data,
+so nothing in `src` or CI runs it:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install coloraide
+.venv/bin/python dev/composite.py
+```

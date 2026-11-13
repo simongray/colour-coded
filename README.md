@@ -153,6 +153,6 @@ colour-coded is MIT. Its conversions and gamut mapping follow the sample
 code of CSS Color 4, under the W3C Software and Document License. The
 matrices of `vision` are those that Machado, Oliveira and Fernandes publish
 with their paper. The tests' fixtures come from Colour.js (MIT), the
-web-platform-tests (BSD-3-Clause), colour-science (BSD-3-Clause), and
-Sharma, Wu and Dalal's test data for CIEDE2000, which they publish for
-research with a citation.
+web-platform-tests (BSD-3-Clause), colour-science (BSD-3-Clause), ColorAide
+(MIT), and Sharma, Wu and Dalal's test data for CIEDE2000, which they publish
+for research with a citation.

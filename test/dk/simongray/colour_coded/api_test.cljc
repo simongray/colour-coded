@@ -5,6 +5,7 @@
             [clojure.test :refer [deftest is testing]]
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
@@ -62,6 +63,8 @@
    "mix/mix a"               #(mix/mix % "red")
    "mix/mix b"               #(mix/mix "red" %)
    "mix/steps"               #(mix/steps % "red" 3)
+   "composite/over a"        #(composite/over % "white")
+   "composite/over b"        #(composite/over "red" %)
    "harmony/turn"            #(harmony/turn % 30)
    "harmony/turns"           #(harmony/turns % [30])
    "harmony/complement"      harmony/complement
@@ -122,6 +125,7 @@
     (is (false? (gamut/in-gamut? "red" :nope)))
     (is (nil? (mix/mix "red" "blue" 0.5 :nope)))
     (is (nil? (mix/steps "red" "blue" 3 :nope)))
+    (is (nil? (composite/over "red" "blue" :nope)))
     (is (nil? (harmony/turn "red" 30 :nope)))
     (is (nil? (harmony/turns "red" [30] :nope))))
   (testing "a space without a hue, where a hue has to turn"
@@ -130,6 +134,9 @@
   (testing "a space without a chroma, where a chroma has to lower"
     (is (nil? (gamut/reduce-chroma "red" :srgb)))
     (is (nil? (gamut/reduce-chroma "red" :hsl))))
+  (testing "a space with a hue, where each component has to be averaged"
+    (is (nil? (composite/over "red" "blue" :oklch)))
+    (is (nil? (composite/over "red" "blue" :hsl))))
   (testing "a token that has no lightness or no chroma to take"
     (doseq [token [{} {:shade 16} {:space :nope :l 0.5} {:space :srgb :l 0.5} {:space :hsl :l 50}]]
       (is (nil? (tone/lightness token)) (pr-str token))
@@ -210,6 +217,9 @@
 (deftest optional-arguments-default-to-the-general-case
   (testing "halfway, as in color-mix()"
     (is (= (mix/mix "red" "blue" 0.5) (mix/mix "red" "blue"))))
+  (testing "sRGB, where a browser composites the colours of sRGB"
+    (is (= (composite/over "rgb(255 0 0 / 50%)" "blue" :srgb)
+           (composite/over "rgb(255 0 0 / 50%)" "blue"))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))

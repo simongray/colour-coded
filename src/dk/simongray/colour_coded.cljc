@@ -28,8 +28,8 @@
 
   These are the other namespaces:
 
-  - space, syntax, gamut, contrast, difference and mix, the rest of the
-    core
+  - space, syntax, gamut, contrast, difference, mix and composite, the
+    rest of the core
   - choose, harmony, tone and target, ways to choose and generate colours
   - quantise and image, the colours of an image
   - vision, colours as people with a colour vision deficiency see them
