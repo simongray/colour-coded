@@ -32,11 +32,12 @@
 ;; WCAG 2.2, success criterion 1.4.3
 (defn at-contrast
   "The colour `x` at the OKLCH lightness where its contrast ratio with the
-  `background` is `r` or just over, or nil where no lightness reaches `r`. By
-  default `r` is 4.5, which WCAG 2.2 asks of text. The colour keeps its hue and
-  as much chroma as sRGB allows. Where a darker and a lighter colour would both
-  do, it's the one nearer the lightness of `x`. A translucent `background`
-  lies on white, as in contrast/ratio."
+  `background` is `r` or just over, or nil where no lightness reaches `r`.
+
+  By default `r` is 4.5, which WCAG 2.2 asks of text. The colour keeps its hue
+  and as much chroma as sRGB allows. Where a darker and a lighter colour would
+  both do, it's the one nearer the lightness of `x`. A translucent
+  `background` lies on white, as in contrast/ratio."
   ([x background]
    (at-contrast x background 4.5))
   ([x background r]

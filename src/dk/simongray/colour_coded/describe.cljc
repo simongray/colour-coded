@@ -1,7 +1,7 @@
 (ns dk.simongray.colour-coded.describe
   "Colours in words: whether one is dark or light, and the name nearest to it.
 
-  A colour is dark where white text has more contrast with it than black
+  A colour is dark where white text has more contrast on it than black
   text, by WCAG 2.2's ratio, and light otherwise. It's the choice that
   contrast/black-or-white makes between the two. They contrast equally at a
   relative luminance of about 0.179, just under an L* of 50. Taking that for
@@ -46,13 +46,13 @@
 ;; grey. min-key returns the last of equals, so sorting the names makes it
 ;; the later one in the alphabet: grey, cyan and magenta
 (defn name
-  "The name nearest to the colour `x` among the `names`, a map of each name
-  to its colour, by default the named colours of CSS. It's nearest by ΔEOK,
-  or by the measure `f`, a function of two colours, e.g.
-  difference/delta-e-2000.
+  "The name nearest to the colour `x` among the `names`, by ΔEOK or by the
+  measure `f`.
 
-  A name of CSS is a colour too, so difference/delta-e of `x` and its name
-  says how near the name is."
+  The `names` are a map of each name to its colour, by default the named
+  colours of CSS, and `f` is a function of two colours, e.g.
+  difference/delta-e-2000. A name of CSS is a colour too, so
+  difference/delta-e of `x` and its name says how near the name is."
   ([x]
    (name x syntax/named-colours))
   ([x names]

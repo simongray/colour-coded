@@ -195,9 +195,11 @@
 (defn from-image
   "The theme of the image in the bytes `b`, e.g. a podcast's artwork, with
   the `roles` of from-seed: from-pixels of the pixels that image/pixels
-  decodes. On the JVM it returns the theme, and in ClojureScript a promise
-  of it, which is nil where the platform can't decode the image or the image
-  is all transparent."
+  decodes.
+
+  On the JVM it returns the theme, and in ClojureScript a promise of it, which
+  is nil where the platform can't decode the image or the image is all
+  transparent."
   ([b]
    (from-image b roles))
   ([b roles]
@@ -374,10 +376,12 @@
 
 (defn relative-css
   "The `roles` as CSS that derives each one from the custom property `prop`,
-  e.g. --seed, with relative colours, so that a page changes its whole theme by
-  setting that one property. It takes the `opts` of css and holds the same
-  blocks. A browser clips a colour outside the display's gamut, so the contrast
-  can differ a little from that of from-seed's colours."
+  e.g. --seed, with relative colours, by the `opts` of css.
+
+  A page changes its whole theme by setting that one property. The CSS holds
+  the same blocks as that of css. A browser clips a colour outside the
+  display's gamut, so the contrast can differ a little from that of from-seed's
+  colours."
   ([prop]
    (relative-css prop roles))
   ([prop roles]

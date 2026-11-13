@@ -286,8 +286,9 @@
 (defn thumbnails
   "The image in the bytes `b` scaled down to each of the `widths`, with the
   :max-pixels of `opts`, as a map of each width to the thumbnail's :type,
-  :width, :height and :data, its bytes. On the JVM it returns the map, and
-  in ClojureScript a promise of it.
+  :width, :height and :data, its bytes.
+
+  On the JVM it returns the map, and in ClojureScript a promise of it.
 
   A thumbnail is a JPEG, or a PNG when the image has transparency. It's
   never wider than the image: the widths at or above the image's own share

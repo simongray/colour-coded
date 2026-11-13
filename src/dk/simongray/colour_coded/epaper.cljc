@@ -210,6 +210,7 @@
 (defn least-gap
   "The fewest shades between any two colours of `xs`, wherever each lands by
   the conversions in `ks`, by default all of them, or nil for fewer than two.
+
   At 0, a pair can look the same on a monochrome panel. Each shade is about 5
   of L*, so colours that must be told apart by their grey alone want several
   shades between them."
@@ -272,9 +273,10 @@
 (defn ratio
   "The contrast ratio of the colour `a` on `b` as the `panel`, by default
   :carta, shows them by the `conversion`, by default
-  greyscale/default-conversion. It uses WCAG's formula, which allows for a
-  screen's flare, so it's on the cautious side: black on white is 9 on a panel
-  with a contrast of 15.
+  greyscale/default-conversion.
+
+  It uses WCAG's formula, which allows for a screen's flare, so it's on the
+  cautious side: black on white is 9 on a panel with a contrast of 15.
 
   A panel gets a translucent colour already flattened, so this flattens it
   first, with `b` on white, as contrast/ratio does."

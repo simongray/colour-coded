@@ -17,14 +17,14 @@ image: ImageIO on the JVM, and the browser's decoder in ClojureScript.
 A colour is a map of `:space`, `:coords` and `:alpha`, the shape that Colour.js uses,
 and every function takes CSS strings too.
 
-`mix/gradient` interpolates in Oklab, like the rest of `mix`. A browser still draws a
-gradient of hex colours in sRGB, but a colour map doesn't record how it was written, so
-you pass `:srgb` to match one.
-
 The parser is in `syntax`, since in ClojureScript a namespace called `css` clashes with
 the function `css` of the root namespace. The names spell "colour", "quantise" and
 "serialise" in British English throughout, but CSS's own words, e.g. `color-mix()`,
 keep CSS's spelling.
+
+`mix/gradient` interpolates in Oklab, like the rest of `mix`. A browser still draws a
+gradient of hex colours in sRGB, but a colour map doesn't record how it was written, so
+you pass `:srgb` to match one.
 
 `composite/over` composites in sRGB by default, where `mix/mix` mixes in Oklab. CSS
 names Oklab for `color-mix()`, but no space for compositing. The W3C's ACT rule for the

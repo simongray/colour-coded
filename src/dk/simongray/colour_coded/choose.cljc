@@ -37,14 +37,16 @@
 (defn first-with-contrast
   "The first colour of `xs` whose contrast ratio with the `background` is at
   least `r`, or nil. By default `r` is 4.5, which WCAG 2.2 asks of text. It
-  asks 3 of a control."
+  asks 3 of a control. A translucent `background` lies on white, as in
+  contrast/ratio."
   ([xs background]
    (first-with-contrast xs background 4.5))
   ([xs background r]
    (first (filter #(when-let [own (contrast/ratio % background)] (>= own r)) xs))))
 
 (defn most-contrast
-  "The colour of `xs` that contrasts most with the `background`."
+  "The colour of `xs` that contrasts most with the `background`. A translucent
+  `background` lies on white, as in contrast/ratio."
   [xs background]
   (let [colours (filter #(contrast/ratio % background) xs)]
     (when (seq colours)

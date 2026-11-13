@@ -69,11 +69,12 @@
 
 (defn relative-css
   "The `token` as a relative colour of CSS from the custom property `prop`,
-  e.g. oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180)). A browser
-  clips it where it lies outside the display's gamut. A token with a :shade
-  takes the lightness of that shade's grey, but its colour usually lands a shade
-  or two away, since only epaper/at-shade searches for a colour that lands
-  there."
+  e.g. oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180)).
+
+  A browser clips it where it lies outside the display's gamut. A token with a
+  :shade takes the lightness of that shade's grey, but its colour usually lands
+  a shade or two away, since only epaper/at-shade searches for a colour that
+  lands there."
   [prop {:keys [space c turn] :or {space :oklch turn 0} :as token}]
   (when-let [l (lightness token)]
     (let [n syntax/format-number]
