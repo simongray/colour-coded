@@ -13,7 +13,9 @@
     (2009) and what colour-science computes with them, which
     dev/machado.py writes
   - greyscale.json, the greys that real PDF and image engines give a fixed
-    set of colours, which dev/greyscale.py writes"
+    set of colours, which dev/greyscale.py writes
+  - composite.json, what ColorAide computes when it composites each of a
+    fixed set of colours over each of them, which dev/composite.py writes"
   #?(:clj  (:require [clojure.data.json :as json]
                      [clojure.java.io :as io]
                      [clojure.string :as str])
@@ -62,6 +64,11 @@
   "The \"colours\" that the engines rendered, and the \"engines\", each with
   the \"conversion\" that should match it and the \"greys\" it gave them."
   (json (resource "greyscale.json")))
+
+(def composite
+  "The \"composites\" of ColorAide, each a map of the CSS colours \"a\" and
+  \"b\", the \"space\", and the \"coords\" and \"alpha\" of a over b in it."
+  (json (resource "composite.json")))
 
 (defn fixture-colour
   "The colour of a fixture of Colour.js `m`, a map of its space, by

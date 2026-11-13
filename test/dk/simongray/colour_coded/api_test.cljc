@@ -5,6 +5,7 @@
             [clojure.test :refer [deftest is testing]]
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
@@ -46,9 +47,12 @@
    "contrast/luminance"      contrast/luminance
    "contrast/ratio a"        #(contrast/ratio % "white")
    "contrast/ratio b"        #(contrast/ratio "white" %)
+   "contrast/ratio canvas"   #(contrast/ratio "red" "white" %)
    "contrast/wcag-level a"   #(contrast/wcag-level % "white")
    "contrast/wcag-level b"   #(contrast/wcag-level "white" %)
+   "contrast/wcag-level canvas" #(contrast/wcag-level "red" "white" %)
    "contrast/black-or-white" contrast/black-or-white
+   "contrast/black-or-white canvas" #(contrast/black-or-white "red" %)
    "difference/delta-e a"    #(difference/delta-e % "white")
    "difference/delta-e b"    #(difference/delta-e "white" %)
    "difference/delta-e-ok2"  #(difference/delta-e-ok2 % "white")
@@ -64,6 +68,8 @@
    "mix/mix a"               #(mix/mix % "red")
    "mix/mix b"               #(mix/mix "red" %)
    "mix/steps"               #(mix/steps % "red" 3)
+   "composite/over a"        #(composite/over % "white")
+   "composite/over b"        #(composite/over "red" %)
    "harmony/turn"            #(harmony/turn % 30)
    "harmony/turns"           #(harmony/turns % [30])
    "harmony/complement"      harmony/complement
@@ -131,6 +137,7 @@
     (is (nil? (mix/steps "red" "blue" 3 :nope)))
     (is (nil? (mix/gradient ["red" "blue"] :nope)))
     (is (nil? (mix/gradient-steps ["red" "blue"] 3 :nope)))
+    (is (nil? (composite/over "red" "blue" :nope)))
     (is (nil? (harmony/turn "red" 30 :nope)))
     (is (nil? (harmony/turns "red" [30] :nope))))
   (testing "a space without a hue, where a hue has to turn"
@@ -139,6 +146,9 @@
   (testing "a space without a chroma, where a chroma has to lower"
     (is (nil? (gamut/reduce-chroma "red" :srgb)))
     (is (nil? (gamut/reduce-chroma "red" :hsl))))
+  (testing "a space with a hue, where each component has to be averaged"
+    (is (nil? (composite/over "red" "blue" :oklch)))
+    (is (nil? (composite/over "red" "blue" :hsl))))
   (testing "a token that has no lightness or no chroma to take"
     (doseq [token [{} {:shade 16} {:space :nope :l 0.5} {:space :srgb :l 0.5} {:space :hsl :l 50}]]
       (is (nil? (tone/lightness token)) (pr-str token))
@@ -228,6 +238,16 @@
   (testing "Oklab and the shorter way round, as mix interpolates"
     (is (= (mix/gradient-steps ["red" "lime" "blue"] 5 :oklab :shorter)
            (mix/gradient-steps ["red" "lime" "blue"] 5))))
+  (testing "sRGB, where a browser composites the colours of sRGB"
+    (is (= (composite/over "rgb(255 0 0 / 50%)" "blue" :srgb)
+           (composite/over "rgb(255 0 0 / 50%)" "blue"))))
+  (testing "a white canvas, which WCAG assumes where no background is specified"
+    (is (= (contrast/ratio "red" "rgb(0 0 0 / 50%)" "white")
+           (contrast/ratio "red" "rgb(0 0 0 / 50%)")))
+    (is (= (contrast/wcag-level "red" "rgb(0 0 0 / 50%)" "white")
+           (contrast/wcag-level "red" "rgb(0 0 0 / 50%)")))
+    (is (= (contrast/black-or-white "rgb(0 0 0 / 50%)" "white")
+           (contrast/black-or-white "rgb(0 0 0 / 50%)"))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))

@@ -26,6 +26,17 @@ the function `css` of the root namespace. The names spell "colour", "quantise" a
 "serialise" in British English throughout, but CSS's own words, e.g. `color-mix()`,
 keep CSS's spelling.
 
+`composite/over` composites in sRGB by default, where `mix/mix` mixes in Oklab. CSS
+names Oklab for `color-mix()`, but no space for compositing. The W3C's ACT rule for the
+contrast of text composites translucent text in sRGB, to judge by the ratios of its
+examples, so that's the default.
+
+WCAG only defines contrast for opaque colours, so `contrast/ratio` flattens a translucent
+one first: its second colour over a canvas, and then its first over the result. That
+makes the order of its arguments matter for a translucent colour. The canvas is white
+unless you pass one. WCAG assumes white where no background is specified, but it's the
+wrong guess on a dark page.
+
 
 ## Bad input
 
