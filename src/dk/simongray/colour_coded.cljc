@@ -31,6 +31,7 @@
   - space, syntax, gamut, contrast, difference and mix, the rest of the
     core
   - choose, harmony, tone and target, ways to choose and generate colours
+  - describe, a colour in words: dark or light, and its nearest name
   - quantise and image, the colours of an image
   - vision, colours as people with a colour vision deficiency see them
   - greyscale and epaper, the greys that colours become on a device, and

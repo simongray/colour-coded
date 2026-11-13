@@ -30,7 +30,8 @@
   prefers-contrast: more.
 
   A theme is plain data, so you can set a role by hand, e.g. with assoc-in,
-  and report checks it again.
+  and report checks it again. keep-seed sets the accent to the seed itself,
+  e.g. a brand's colour, wherever the seed has the contrast.
 
   For e-paper, epaper-roles puts each role on a panel's grey:
 
@@ -247,6 +248,68 @@
         :ratio      r
         :wants      wants
         :ok?        (boolean (and r (>= r wants)))}))))
+
+(defn- contrasts?
+  "Whether the `colours`, a map of each role to its colour, have the contrast
+  that each of the `pairs` of requirements asks for."
+  [colours pairs]
+  (every? (fn [[a b wants]]
+            (some-> (contrast/ratio (colours a) (colours b)) (>= wants)))
+          pairs))
+
+;; Material prefers a light foreground where both would do
+;; https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/dynamic_color.ts
+(defn- with-accent
+  "The `colours` of one appearance with the `accent` and the text on it:
+  white, or else black, where that meets the `pairs` of requirements. It's nil
+  where neither does."
+  [colours pairs accent]
+  (->> [contrast/white contrast/black]
+       (map #(assoc colours :accent accent :on-accent %))
+       (filter #(contrasts? % pairs))
+       first))
+
+(defn- accents
+  "The colours of the `seed`'s hue at each L* from its own outwards, nearest
+  first, in steps of half an L*, each with as much of the seed's chroma as
+  sRGB holds. The first is the seed itself, where it lies in sRGB."
+  [seed]
+  (let [own (or (first (:coords (cc/to seed :lch))) 0.0)]
+    (for [d     (range 0 100.5 0.5)
+          l     (distinct [(- own d) (+ own d)])
+          :when (<= 0 l 100)]
+      (tone/tone {:space :lch :l l} seed))))
+
+;; WCAG 2.2 exempts a logotype from 1.4.3, but not a colour that brand
+;; guidelines ask for, so a brand's colour only stays where it contrasts.
+;; Material moves a tone that falls short until it doesn't
+;; https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+;; https://github.com/material-foundation/material-color-utilities/blob/main/concepts/scheme_generation.md
+(defn keep-seed
+  "The `theme` with the seed itself as its accent, wherever the seed has the
+  contrast that requirements asks of an accent, or nil for a theme without a
+  seed.
+
+  from-seed gives every role a fixed lightness, so its accent only takes the
+  seed's hue and chroma. This accent keeps the seed's lightness too, e.g. for
+  a brand's colour. In an appearance or at a level where the seed falls short,
+  the accent moves to the nearest L* that has the contrast, to within half an
+  L*. It keeps the seed's hue there, and as much of its chroma as sRGB holds.
+  The text on the accent is white where that has the contrast, and black
+  otherwise.
+
+  The link and the focus ring stay as they were, so they can differ from the
+  accent. This isn't for a theme of epaper-roles, whose accent has to stay on
+  its shade."
+  [theme]
+  (when-let [seed (cc/colour (:seed theme))]
+    (let [nearest (accents seed)]
+      (into theme
+            (for [[level pairs] requirements
+                  :let          [pairs (filter #(some #{:accent} (take 2 %)) pairs)]
+                  :when         (get theme level)]
+              [level (update-vals (get theme level)
+                                  #(or (some (partial with-accent % pairs) nearest) %))])))))
 
 ;; MDN, forced-colors: a page in forced colours keeps to the system colours
 ;; https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors

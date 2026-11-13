@@ -15,6 +15,9 @@ release.
 The root namespace's docstring states the rules that every namespace keeps to, and
 `api_test.cljc` tests them. Add a new function to its tables.
 
+On the JVM, `doc_examples_test.clj` runs the examples of the README and the pages in
+`doc`, and checks each result that's written as `;; =>`.
+
 
 ## Trying unreleased changes
 

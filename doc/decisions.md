@@ -17,6 +17,10 @@ image: ImageIO on the JVM, and the browser's decoder in ClojureScript.
 A colour is a map of `:space`, `:coords` and `:alpha`, the shape that Colour.js uses,
 and every function takes CSS strings too.
 
+`mix/gradient` interpolates in Oklab, like the rest of `mix`. A browser still draws a
+gradient of hex colours in sRGB, but a colour map doesn't record how it was written, so
+you pass `:srgb` to match one.
+
 The parser is in `syntax`, since in ClojureScript a namespace called `css` clashes with
 the function `css` of the root namespace. The names spell "colour", "quantise" and
 "serialise" in British English throughout, but CSS's own words, e.g. `color-mix()`,
@@ -41,6 +45,12 @@ from. A report checks every pair anyway.
 `tone` lowers a colour's chroma in the token's own space, so that its lightness and hue
 stay exact, rather than with CSS's gamut mapping. `tone/worst-contrast` checks both that
 and the clipping of browsers.
+
+A theme's accent isn't the seed itself, since a fixed lightness is what holds the
+contrast. `theme/keep-seed` is a separate step for a brand's colour, so that asking for
+it is a choice. It still wants the accent to contrast 3:1 with the page, which WCAG
+doesn't ask of a button that has a label, so a light colour such as yellow darkens in
+the light appearance.
 
 An image with no opaque pixels has no seed, so it has no theme. A made-up grey would
 hide that, so pass a colour of your own to `theme/from-seed` for that case.

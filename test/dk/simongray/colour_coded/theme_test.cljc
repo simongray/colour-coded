@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [dk.simongray.colour-coded :as cc]
+            [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.test-data :as data]
             [dk.simongray.colour-coded.theme :as theme]))
@@ -63,6 +64,42 @@
            (set (keys (:light (theme/hex t))))))
     (is (= "#ffffff" (get-in (theme/hex t) [:light :background])))
     (is (= 48 (count (theme/report t))) "twelve pairs, at two levels, in two appearances")))
+
+(def light-and-dark-seeds
+  "Seeds of many hues, chromas and lightnesses, some of them outside sRGB."
+  (for [l      [0.2 0.45 0.7 0.95]
+        h      (range 0 360 60)
+        chroma [0 0.12 0.37]]
+    {:space :oklch :coords [l chroma h]}))
+
+(deftest a-kept-seed-contrasts-whatever-the-seed
+  (doseq [seed light-and-dark-seeds]
+    (is (empty? (remove :ok? (theme/report (theme/keep-seed (theme/from-seed seed)))))
+        (str seed))))
+
+(deftest a-seed-with-the-contrast-stays-the-accent
+  (let [t     (theme/keep-seed (theme/from-seed "#3498db"))
+        roles #(select-keys % [:accent :on-accent])]
+    (is (= {:accent "#3498db" :on-accent "#000000"} (roles (:light (theme/hex t)))))
+    (is (= {:accent "#3498db" :on-accent "#000000"} (roles (:dark (theme/hex t)))))
+    (is (= "#ffffff" (get-in (theme/hex t :more) [:light :on-accent]))
+        "no text has 7:1 on it, so it darkens at the level :more, and takes white text")))
+
+(deftest a-seed-without-the-contrast-moves-as-little-as-it-can
+  (let [t      (theme/keep-seed (theme/from-seed "#ffd000"))
+        accent (get-in t [:standard :light :accent])
+        hue    #(get-in (cc/to % :lch) [:coords 2])]
+    (is (< 3 (contrast/ratio accent "white") 3.1) "to just past 3:1 with the page")
+    (is (data/same-hue? 1e-6 (hue "#ffd000") (hue accent)))
+    (is (= "#ffd000" (get-in (theme/hex t) [:dark :accent])) "and not at all in the dark")))
+
+(deftest keeping-the-seed-leaves-the-other-roles
+  (let [t      (theme/from-seed "#24476b")
+        others (fn [theme level]
+                 (update-vals (get theme level) #(dissoc % :accent :on-accent)))]
+    (doseq [level [:standard :more]]
+      (is (= (others t level) (others (theme/keep-seed t) level))))
+    (is (= (:seed t) (:seed (theme/keep-seed t))))))
 
 (deftest css
   (let [s (theme/css (theme/from-seed "#24476b"))]

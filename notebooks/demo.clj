@@ -11,6 +11,7 @@
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
             [dk.simongray.colour-coded.contrast :as contrast]
+            [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -306,6 +307,18 @@
 (theme-rows (for [t seed-themes]
               [(swatch (:seed t)) t]))
 
+;; The accent of such a theme has the seed's hue, but a lightness of its
+;; own. With `theme/keep-seed`, the accent is the seed itself wherever the
+;; seed has the contrast, e.g. for a brand's colour, and as near to it as
+;; the contrast allows elsewhere:
+
+(def brand
+  (theme/from-seed "#3498db"))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(theme-rows [["from-seed" brand]
+             ["keep-seed" (theme/keep-seed brand)]])
+
 ;; The level :more, which the CSS uses under prefers-contrast: more, sits
 ;; here beside :standard:
 
@@ -518,6 +531,19 @@
            ["spread by 0.08" (row (map swatch spread))]
            ["3:1 on #2b4c9b" (swatch control)]])
 
+;; ## Colours in words
+;;
+;; For each colour, `describe/name` finds the nearest named colour of CSS,
+;; and `describe/dark?` says whether white text has more contrast with it
+;; than black text:
+
+(def described
+  ["#24476b" "#e8b931" "#c8382d" "#7b2cbf" "#808080"])
+
+^{::clerk/visibility {:code :hide :result :show}}
+(swatches described (for [x described]
+                      (str (describe/name x) ", " (if (describe/dark? x) "dark" "light"))))
+
 ;; ## Contrast
 ;;
 ;; Each sample shows WCAG 2.2's contrast ratio and the level it meets:
@@ -714,6 +740,17 @@
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (labelled (for [[method xs] hue-methods] [(name method) (strip xs)]))
+
+;; A gradient goes through any number of colours, which CSS's rules for
+;; the stops of a gradient place. The second one has its yellow a fifth of
+;; the way along:
+
+(def gradients
+  [["evenly spaced" (mix/gradient-steps ["#2b4c9b" "#e8b931" "#c8382d"] 24)]
+   ["yellow at 0.2" (mix/gradient-steps ["#2b4c9b" ["#e8b931" 0.2] "#c8382d"] 24)]])
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[label xs] gradients] [label (strip xs)]))
 
 ;; ## Colour difference
 ;;

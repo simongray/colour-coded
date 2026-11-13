@@ -6,6 +6,7 @@
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
             [dk.simongray.colour-coded.contrast :as contrast]
+            [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -54,6 +55,7 @@
    "difference/delta-e-76"   #(difference/delta-e-76 % "white")
    "difference/delta-e-2000" #(difference/delta-e-2000 % "white")
    "difference/nearest"      #(difference/nearest ["red"] %)
+   "describe/name"           describe/name
    "choose/chroma"           choose/chroma
    "choose/first-with-contrast background" #(choose/first-with-contrast ["red"] %)
    "choose/most-contrast background"       #(choose/most-contrast ["red"] %)
@@ -98,15 +100,20 @@
     (is (= [nil nil nil nil] (map syntax/serialise ["red" nil 5 {:space :nope :coords [0 0 0]}]))))
   (testing "a theme of no colour"
     (let [nothing (theme/from-seed "not a colour")]
-      (is (= [nil nil nil nil nil]
+      (is (= [nil nil nil nil nil nil]
              [(theme/colours nothing) (theme/hex nothing) (theme/css nothing)
-              (theme/design-tokens nothing) (theme/report nothing)])))))
+              (theme/design-tokens nothing) (theme/report nothing)
+              (theme/keep-seed nothing)]))))
+  (testing "a theme without a seed"
+    (is (nil? (theme/keep-seed (dissoc (theme/from-seed "#24476b") :seed))))))
 
 (deftest a-question-about-a-colour-answers-false-for-anything-else
   (doseq [[name f] {"cc/colour?"           cc/colour?
                     "gamut/in-gamut?"      gamut/in-gamut?
                     "gamut/in-gamut? of an unbounded space" #(gamut/in-gamut? % :oklab)
                     "choose/chromatic?"    choose/chromatic?
+                    "describe/dark?"       describe/dark?
+                    "describe/light?"      describe/light?
                     "epaper/same-grey?"    #(epaper/same-grey? % "red")}
           x        not-colours]
     (is (false? (f x)) (str name " of " (pr-str x)))))
@@ -122,6 +129,8 @@
     (is (false? (gamut/in-gamut? "red" :nope)))
     (is (nil? (mix/mix "red" "blue" 0.5 :nope)))
     (is (nil? (mix/steps "red" "blue" 3 :nope)))
+    (is (nil? (mix/gradient ["red" "blue"] :nope)))
+    (is (nil? (mix/gradient-steps ["red" "blue"] 3 :nope)))
     (is (nil? (harmony/turn "red" 30 :nope)))
     (is (nil? (harmony/turns "red" [30] :nope))))
   (testing "a space without a hue, where a hue has to turn"
@@ -142,7 +151,8 @@
     (is (nil? (cc/with "red" :srgb {:l 0.5})))
     (is (nil? (cc/with "red" :oklch {:nope 1}))))
   (testing "a way for a hue to turn"
-    (is (nil? (mix/mix "red" "blue" 0.5 :oklch :nope))))
+    (is (nil? (mix/mix "red" "blue" 0.5 :oklch :nope)))
+    (is (nil? (mix/gradient ["red" "blue"] :oklch :nope))))
   (testing "a deficiency"
     (is (nil? (vision/matrix :nope 1.0)))
     (is (nil? (vision/simulate "red" :nope))))
@@ -180,6 +190,9 @@
     (is (= (vision/least-difference clean) (vision/least-difference with-bad)))
     (is (= (epaper/least-gap clean) (epaper/least-gap with-bad)))
     (is (= (choose/scheme clean) (choose/scheme with-bad)))
+    (is (= (mix/gradient-steps clean 9) (mix/gradient-steps with-bad 9)))
+    (is (= (mix/gradient-steps clean 9) (mix/gradient-steps (conj clean ["red" "a position"]) 9))
+        "nor a stop whose position isn't a number")
     (testing "a hue with no colour on its shade"
       (let [good (first epaper/hues)]
         (is (= (epaper/palette [good])
@@ -189,7 +202,9 @@
       (is (nil? (choose/most-contrast ["not a colour"] "white")))
       (is (nil? (choose/scheme ["not a colour"])))
       (is (= [] (choose/spread ["not a colour"])))
-      (is (nil? (difference/least ["not a colour" "red"]))))))
+      (is (nil? (difference/least ["not a colour" "red"])))
+      (is (nil? (mix/gradient ["not a colour"])))
+      (is (nil? (mix/gradient-steps ["not a colour"] 3))))))
 
 (deftest a-report-fails-what-is-not-a-colour
   (testing "a list of colours"
@@ -210,6 +225,9 @@
 (deftest optional-arguments-default-to-the-general-case
   (testing "halfway, as in color-mix()"
     (is (= (mix/mix "red" "blue" 0.5) (mix/mix "red" "blue"))))
+  (testing "Oklab and the shorter way round, as mix interpolates"
+    (is (= (mix/gradient-steps ["red" "lime" "blue"] 5 :oklab :shorter)
+           (mix/gradient-steps ["red" "lime" "blue"] 5))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))
@@ -217,6 +235,9 @@
     (is (= (target/at-contrast "red" "white" 4.5) (target/at-contrast "red" "white")))
     (is (= (choose/first-with-contrast ["#999999" "#222222"] "white" 4.5)
            (choose/first-with-contrast ["#999999" "#222222"] "white"))))
+  (testing "the names of CSS, nearest by ΔEOK"
+    (is (= (describe/name "#24476b" syntax/named-colours difference/delta-e)
+           (describe/name "#24476b"))))
   (testing "a ramp of ratios"
     (is (= (target/scale "red" "white" [1.5 3 4.5 7]) (target/scale "red" "white"))))
   (testing "colours clearly apart"

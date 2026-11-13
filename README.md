@@ -57,6 +57,10 @@ main control, the text on the accent, links and the focus ring.
 that a page changes its theme by setting it. `theme/design-tokens` writes them as
 design tokens, e.g. for Style Dictionary.
 
+The accent takes its hue from your colour, but not its lightness. To keep a
+brand's colour itself as the accent wherever it has the contrast, pass the theme
+to `theme/keep-seed`.
+
 To start from an image instead, pass the bytes of its file. In ClojureScript,
 this returns a promise.
 
