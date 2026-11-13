@@ -10,6 +10,7 @@
   (:require [clojure.string :as str]
             [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.choose :as choose]
+            [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
             [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
@@ -573,6 +574,22 @@
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (swatches mid-tones (map #(if (= % contrast/black) "black" "white") picks))
+
+;; WCAG defines the ratio for opaque colours, so `contrast/ratio` flattens a
+;; translucent one first, as `composite/over` does. Each swatch is text at a
+;; lower alpha as it shows on its page, with the contrast that it has left:
+
+(def faded
+  (for [[text page] [["black" "white"] ["white" "#16181a"]]]
+    [(str text " on " page)
+     (for [alpha [1 0.6 0.3 0.15]
+           :let  [translucent (cc/with text :srgb {:alpha alpha})]]
+       [(composite/over translucent page) (contrast/ratio translucent page)])]))
+
+^{::clerk/visibility {:code :hide :result :show}}
+(labelled (for [[label shown] faded]
+            [label (row (for [[x ratio] shown]
+                          (swatch x (fmt "%.1f" ratio))))]))
 
 ;; ## Colour vision
 ;;
