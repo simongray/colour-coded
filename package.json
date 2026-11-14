@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "colorjs.io": "0.7.1",
-    "shadow-cljs": "^3.5.3"
+    "shadow-cljs": "^3.5.14"
   }
 }
