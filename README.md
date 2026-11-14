@@ -22,7 +22,7 @@ You need Clojure 1.11+ and Java 11+. Add colour-coded to the `:deps` in your
 `deps.edn`:
 
 ```clojure
-dk.simongray/colour-coded {:mvn/version "0.3.0"}
+dk.simongray/colour-coded {:mvn/version "0.3.1"}
 ```
 
 Start from one colour:
