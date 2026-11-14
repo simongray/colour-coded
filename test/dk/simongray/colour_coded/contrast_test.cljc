@@ -76,3 +76,45 @@
          [(cc/hex (contrast/black-or-white "rgb(0 0 0 / 0.2)"))
           (cc/hex (contrast/black-or-white "rgb(0 0 0 / 0.2)" "black"))])
       "a translucent colour as it shows on the canvas"))
+
+(deftest dark-or-light
+  (is (contrast/dark? "#24476b"))
+  (is (contrast/light? "#ffd000"))
+  (testing "black and white text contrast equally between these greys"
+    (is (= [true false] (map contrast/dark? ["#757575" "#767676"]))))
+  (testing "a translucent colour is as dark as it shows on the canvas"
+    (is (contrast/light? "rgb(0 0 0 / 0.2)") "a light grey on white")
+    (is (contrast/dark? "rgb(0 0 0 / 0.2)" "black"))
+    (is (contrast/dark? "rgb(255 255 255 / 0.2)" "#16181a"))
+    (is (contrast/light? "rgb(255 255 255 / 0.2)")))
+  (testing "a colour is one or the other, as white or black text contrasts more"
+    (doseq [hex (vals cc/named-colours)]
+      (is (not= (contrast/dark? hex) (contrast/light? hex)) hex)
+      (is (= (contrast/dark? hex)
+             (>= (contrast/ratio "white" hex) (contrast/ratio "black" hex)))
+          hex))))
+
+(deftest colours-at-a-ratio
+  (doseq [x  ["#24476b" "#ffd000" "#a90000" "#2e8b57"]
+          bg ["white" "#111111"]
+          r  [3 4.5 7]
+          :let [c (contrast/at-ratio x bg r)]]
+    (is (data/close? 0.01 r (contrast/ratio c bg)) (str x " on " bg " at " r))
+    (is (data/same-hue? 3 (get-in (cc/to x :oklch) [:coords 2]) (get-in (cc/to c :oklch) [:coords 2]))
+        "at the colour's own hue")))
+
+(deftest translucent-colours-at-a-ratio
+  (let [bg "rgb(0 0 0 / 0.2)"]
+    (is (data/close? 0.01 4.5 (contrast/ratio (contrast/at-ratio "#888888" bg) bg))
+        "a background as it shows on white"))
+  (let [c (contrast/at-ratio "rgb(136 136 136 / 0.9)" "white")]
+    (is (= 0.9 (:alpha c)))
+    (is (data/close? 0.01 4.5 (contrast/ratio c "white")) "a colour as it shows"))
+  (is (nil? (contrast/at-ratio "rgb(136 136 136 / 0.3)" "white"))
+      "or nil, where it's too faint at any lightness"))
+
+(deftest an-unreachable-ratio
+  (is (nil? (contrast/at-ratio "red" "#777777" 7)) "a mid grey is 4.5 at most from black or white"))
+
+(deftest colours-at-ratios
+  (is (= 4 (count (remove nil? (contrast/at-ratios "#24476b" "white" [1.5 3 4.5 7]))))))

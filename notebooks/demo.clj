@@ -12,7 +12,6 @@
             [dk.simongray.colour-coded.choose :as choose]
             [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
-            [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -21,8 +20,6 @@
             [dk.simongray.colour-coded.image :as image]
             [dk.simongray.colour-coded.mix :as mix]
             [dk.simongray.colour-coded.quantise :as quantise]
-            [dk.simongray.colour-coded.syntax :as syntax]
-            [dk.simongray.colour-coded.target :as target]
             [dk.simongray.colour-coded.theme :as theme]
             [dk.simongray.colour-coded.tone :as tone]
             [dk.simongray.colour-coded.vision :as vision]
@@ -458,7 +455,7 @@
 ;; ## Colours by their contrast
 ;;
 ;; Adobe's Leonardo finds a colour's lightness by the contrast it should
-;; have with a background, and so does `at-contrast`. These four colours
+;; have with a background, and so does `contrast/at-ratio`. These four colours
 ;; have contrasts of 1.5, 3, 4.5 and 7, on white and on near-black:
 
 (def scales
@@ -466,7 +463,7 @@
         x          ["#24476b" "#e8b931" "#c8382d" "#2e8b57"]]
     {:colour     x
      :background background
-     :scale      (target/scale x background [1.5 3 4.5 7])}))
+     :scale      (contrast/at-ratios x background [1.5 3 4.5 7])}))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (labelled (for [{:keys [colour background scale]} scales]
@@ -534,8 +531,8 @@
 
 ;; ## Colours in words
 ;;
-;; For each colour, `describe/name` finds the nearest named colour of CSS,
-;; and `describe/dark?` says whether white text has more contrast with it
+;; For each colour, `choose/nearest` finds the nearest named colour of CSS,
+;; and `contrast/dark?` says whether white text has more contrast on it
 ;; than black text:
 
 (def described
@@ -543,7 +540,7 @@
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (swatches described (for [x described]
-                      (str (describe/name x) ", " (if (describe/dark? x) "dark" "light"))))
+                      (str (choose/nearest x) ", " (if (contrast/dark? x) "dark" "light"))))
 
 ;; ## Contrast
 ;;
@@ -774,22 +771,18 @@
 ;; These are the CSS named colours nearest to some colours, by ΔEOK and by
 ;; CIEDE2000:
 
-(def named
-  (for [[n hex] syntax/named-colours]
-    (assoc (cc/colour hex) :name n)))
-
 (def nearest
   (for [x ["#24476b" "#c8382d" "#e8b931" "#7aa95c" "#f4f4f2"]]
     {:colour    x
-     :ΔEOK      (difference/nearest named x)
-     :CIEDE2000 (difference/nearest named x difference/delta-e-2000)}))
+     :ΔEOK      (choose/nearest x)
+     :CIEDE2000 (choose/nearest x cc/named-colours difference/delta-e-2000)}))
 
 ^{::clerk/visibility {:code :hide :result :show}}
 (labelled (for [{:keys [colour ΔEOK CIEDE2000]} nearest]
             [colour
              (row [(swatch colour)
-                   (swatch ΔEOK (str (:name ΔEOK) ", ΔEOK"))
-                   (swatch CIEDE2000 (str (:name CIEDE2000) ", CIEDE2000"))])]))
+                   (swatch ΔEOK (str ΔEOK ", ΔEOK"))
+                   (swatch CIEDE2000 (str CIEDE2000 ", CIEDE2000"))])]))
 
 ;; ## Gamut mapping
 ;;

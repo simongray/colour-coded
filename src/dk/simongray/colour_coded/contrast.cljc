@@ -1,6 +1,6 @@
 (ns dk.simongray.colour-coded.contrast
-  "The contrast of two colours by WCAG 2.2, and the text colour that reads
-  best on one.
+  "The contrast of two colours by WCAG 2.2, the text colour that reads best
+  on one, and a colour at the contrast that you ask for.
 
   WCAG 2.2 asks for these contrast ratios:
 
@@ -30,6 +30,7 @@
   https://www.w3.org/WAI/standards-guidelines/act/rules/afw4f7/"
   (:require [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.composite :as composite]
+            [dk.simongray.colour-coded.gamut :as gamut]
             [dk.simongray.colour-coded.space :as space]))
 
 (def black
@@ -99,3 +100,80 @@
      (if (> dark (ratio white x canvas))
        black
        white))))
+
+;; Black and white text contrast equally at a relative luminance of about
+;; 0.179, just under an L* of 50. Taking that for the line between dark and
+;; light is a judgement: Material prefers white text on any tone below 60
+;; https://github.com/material-foundation/material-color-utilities/blob/main/typescript/dynamiccolor/dynamic_color.ts
+(defn dark?
+  "Whether the colour `x` is dark, i.e. white text has more contrast on it
+  than black text, or as much. A translucent `x` lies on the `canvas`, by
+  default white, as in ratio, so it's as dark as it shows there."
+  ([x]
+   (dark? x white))
+  ([x canvas]
+   (= white (black-or-white x canvas))))
+
+(defn light?
+  "Whether the colour `x` is light, i.e. black text has more contrast on it
+  than white text. A translucent `x` lies on the `canvas`, by default white,
+  as in ratio, so it's as light as it shows there."
+  ([x]
+   (light? x white))
+  ([x canvas]
+   (= black (black-or-white x canvas))))
+
+(defn- at-lightness
+  "The colour `x` at the OKLCH lightness `l`, with its chroma lowered until
+  it lies in sRGB."
+  [x l]
+  (gamut/reduce-chroma (cc/with x :oklch {:l l}) :oklch))
+
+(defn- search
+  "The lightness at which the colour `x` has a contrast ratio of just `r` or
+  more with the `background`, searched for between `from`, where the
+  contrast is least, and `to`, where it's most, or nil where even `to`
+  falls short."
+  [x background r from to]
+  (when (>= (ratio (at-lightness x to) background) r)
+    (loop [near from far to n 0]
+      (let [mid (/ (+ near far) 2)]
+        (cond
+          (>= n 30)                                       far
+          (>= (ratio (at-lightness x mid) background) r)  (recur near mid (inc n))
+          :else                                           (recur mid far (inc n)))))))
+
+;; The method of Adobe's Leonardo: a search for the lightness at which a
+;; colour has the contrast asked for, since the same lightness has a
+;; different contrast at each hue. The default is that of WCAG 2.2's 1.4.3
+;; https://github.com/adobe/leonardo
+(defn at-ratio
+  "The colour `x` at the OKLCH lightness where its contrast ratio with the
+  `background` is `r` or just over, or nil where no lightness reaches `r`.
+
+  By default `r` is 4.5, which WCAG 2.2 asks of text. The colour keeps its hue
+  and as much chroma as sRGB allows. Where a darker and a lighter colour would
+  both do, it's the one nearer the lightness of `x`. A translucent
+  `background` lies on white, as in ratio."
+  ([x background]
+   (at-ratio x background 4.5))
+  ([x background r]
+   (let [ground (composite/over background white)]
+     (when (and (cc/colour x) ground)
+       (let [l-bg      (or (get-in (cc/to ground :oklch) [:coords 0]) 0.0)
+             l-x       (or (get-in (cc/to x :oklch) [:coords 0]) 0.0)
+             lightness (->> [(search x ground r l-bg 0.0) (search x ground r l-bg 1.0)]
+                            (remove nil?)
+                            (sort-by #(abs (- % l-x)))
+                            first)]
+         (some->> lightness (at-lightness x)))))))
+
+(defn at-ratios
+  "The colour `x` at each contrast ratio of `rs` with the `background`, as
+  at-ratio finds it. By default the ratios are [1.5 3 4.5 7], a ramp from a
+  decoration to AAA's text."
+  ([x background]
+   (at-ratios x background [1.5 3 4.5 7]))
+  ([x background rs]
+   (when (and (cc/colour x) (cc/colour background))
+     (mapv #(at-ratio x background %) rs))))

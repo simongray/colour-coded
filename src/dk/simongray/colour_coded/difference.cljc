@@ -118,16 +118,6 @@
     (when (and ca cb)
       (ciede2000 (:coords ca) (:coords cb)))))
 
-(defn nearest
-  "The colour of `xs` nearest to the colour `x` by ΔEOK, or by the measure
-  `f`, a function of two colours, e.g. delta-e-2000."
-  ([xs x]
-   (nearest xs x delta-e))
-  ([xs x f]
-   (let [colours (filter cc/colour xs)]
-     (when (and (cc/colour x) (seq colours))
-       (apply min-key #(f x %) colours)))))
-
 (defn least
   "The least difference between any two colours of `xs`, by ΔEOK or by the
   measure `f`, or nil for fewer than two colours."

@@ -30,8 +30,7 @@
 
   - space, syntax, gamut, contrast, difference, mix and composite, the
     rest of the core
-  - choose, harmony, tone and target, ways to choose and generate colours
-  - describe, a colour in words: dark or light, and its nearest name
+  - choose, harmony and tone, ways to choose and generate colours
   - quantise and image, the colours of an image
   - vision, colours as people with a colour vision deficiency see them
   - greyscale and epaper, the greys that colours become on a device, and
@@ -39,6 +38,10 @@
   - theme, the colours of a site or an app, from one colour or one image"
   (:require [dk.simongray.colour-coded.syntax :as syntax]
             [dk.simongray.colour-coded.space :as space]))
+
+(def named-colours
+  "The named colours of CSS Color 4, as hex colours, by their names."
+  syntax/named-colours)
 
 (defn- component?
   "Whether `v` can be a component of a colour: a number, or nil for a missing

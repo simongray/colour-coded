@@ -7,7 +7,6 @@
             [dk.simongray.colour-coded.choose :as choose]
             [dk.simongray.colour-coded.composite :as composite]
             [dk.simongray.colour-coded.contrast :as contrast]
-            [dk.simongray.colour-coded.describe :as describe]
             [dk.simongray.colour-coded.difference :as difference]
             [dk.simongray.colour-coded.epaper :as epaper]
             [dk.simongray.colour-coded.gamut :as gamut]
@@ -16,7 +15,6 @@
             [dk.simongray.colour-coded.mix :as mix]
             [dk.simongray.colour-coded.quantise :as quantise]
             [dk.simongray.colour-coded.syntax :as syntax]
-            [dk.simongray.colour-coded.target :as target]
             [dk.simongray.colour-coded.theme :as theme]
             [dk.simongray.colour-coded.tone :as tone]
             [dk.simongray.colour-coded.vision :as vision]))
@@ -53,14 +51,17 @@
    "contrast/wcag-level canvas" #(contrast/wcag-level "red" "white" %)
    "contrast/black-or-white" contrast/black-or-white
    "contrast/black-or-white canvas" #(contrast/black-or-white "red" %)
+   "contrast/at-ratio x"     #(contrast/at-ratio % "white")
+   "contrast/at-ratio background" #(contrast/at-ratio "red" %)
+   "contrast/at-ratios"      #(contrast/at-ratios % "white")
    "difference/delta-e a"    #(difference/delta-e % "white")
    "difference/delta-e b"    #(difference/delta-e "white" %)
    "difference/delta-e-ok2"  #(difference/delta-e-ok2 % "white")
    "difference/delta-e-76"   #(difference/delta-e-76 % "white")
    "difference/delta-e-2000" #(difference/delta-e-2000 % "white")
-   "difference/nearest"      #(difference/nearest ["red"] %)
-   "describe/name"           describe/name
    "choose/chroma"           choose/chroma
+   "choose/nearest"          choose/nearest
+   "choose/nearest of a list" #(choose/nearest % ["red"])
    "choose/first-with-contrast background" #(choose/first-with-contrast ["red"] %)
    "choose/most-contrast background"       #(choose/most-contrast ["red"] %)
    "mix/interpolate a"       #(mix/interpolate % "red")
@@ -82,9 +83,6 @@
    "tone/tone"               #(tone/tone % {:l 0.5})
    "tone/tone on a shade"    #(tone/tone % {:shade 5})
    "tone/tones"              #(tone/tones % {:a {:l 0.5}})
-   "target/at-contrast x"    #(target/at-contrast % "white")
-   "target/at-contrast background" #(target/at-contrast "red" %)
-   "target/scale"            #(target/scale % "white")
    "vision/simulate"         #(vision/simulate % :protan)
    "greyscale/values"        greyscale/values
    "greyscale/value"         greyscale/value
@@ -118,10 +116,10 @@
                     "gamut/in-gamut?"      gamut/in-gamut?
                     "gamut/in-gamut? of an unbounded space" #(gamut/in-gamut? % :oklab)
                     "choose/chromatic?"    choose/chromatic?
-                    "describe/dark?"       describe/dark?
-                    "describe/dark? canvas" #(describe/dark? "red" %)
-                    "describe/light?"      describe/light?
-                    "describe/light? canvas" #(describe/light? "red" %)
+                    "contrast/dark?"       contrast/dark?
+                    "contrast/dark? canvas" #(contrast/dark? "red" %)
+                    "contrast/light?"      contrast/light?
+                    "contrast/light? canvas" #(contrast/light? "red" %)
                     "epaper/same-grey?"    #(epaper/same-grey? % "red")}
           x        not-colours]
     (is (false? (f x)) (str name " of " (pr-str x)))))
@@ -194,7 +192,7 @@
   (let [clean    ["red" "blue" "#808080" "#ffff00"]
         with-bad (interpose "not a colour" clean)]
     (is (= (difference/least clean) (difference/least with-bad)))
-    (is (= "red" (difference/nearest with-bad "red")))
+    (is (= "red" (choose/nearest "red" with-bad)))
     (is (= "red" (choose/seed ["not a colour" nil "red"])))
     (is (= "red" (choose/first-with-contrast ["not a colour" nil "red"] "white" 3)))
     (is (= "blue" (choose/most-contrast ["not a colour" nil "blue"] "white")))
@@ -250,22 +248,22 @@
            (contrast/wcag-level "red" "rgb(0 0 0 / 50%)")))
     (is (= (contrast/black-or-white "rgb(0 0 0 / 50%)" "white")
            (contrast/black-or-white "rgb(0 0 0 / 50%)")))
-    (is (= (describe/dark? "rgb(0 0 0 / 50%)" "white")
-           (describe/dark? "rgb(0 0 0 / 50%)")))
-    (is (= (describe/light? "rgb(0 0 0 / 50%)" "white")
-           (describe/light? "rgb(0 0 0 / 50%)"))))
+    (is (= (contrast/dark? "rgb(0 0 0 / 50%)" "white")
+           (contrast/dark? "rgb(0 0 0 / 50%)")))
+    (is (= (contrast/light? "rgb(0 0 0 / 50%)" "white")
+           (contrast/light? "rgb(0 0 0 / 50%)"))))
   (testing "OKLCH, as harmony turns hues"
     (is (= (gamut/reduce-chroma "oklch(70% 0.4 140)" :oklch)
            (gamut/reduce-chroma "oklch(70% 0.4 140)"))))
   (testing "the contrast that WCAG asks of text"
-    (is (= (target/at-contrast "red" "white" 4.5) (target/at-contrast "red" "white")))
+    (is (= (contrast/at-ratio "red" "white" 4.5) (contrast/at-ratio "red" "white")))
     (is (= (choose/first-with-contrast ["#999999" "#222222"] "white" 4.5)
            (choose/first-with-contrast ["#999999" "#222222"] "white"))))
   (testing "the names of CSS, nearest by ΔEOK"
-    (is (= (describe/name "#24476b" syntax/named-colours difference/delta-e)
-           (describe/name "#24476b"))))
+    (is (= (choose/nearest "#24476b" cc/named-colours difference/delta-e)
+           (choose/nearest "#24476b"))))
   (testing "a ramp of ratios"
-    (is (= (target/scale "red" "white" [1.5 3 4.5 7]) (target/scale "red" "white"))))
+    (is (= (contrast/at-ratios "red" "white" [1.5 3 4.5 7]) (contrast/at-ratios "red" "white"))))
   (testing "colours clearly apart"
     (is (= (choose/spread ["red" "#ff0a00" "blue"] 0.1)
            (choose/spread ["red" "#ff0a00" "blue"]))))

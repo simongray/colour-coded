@@ -97,9 +97,9 @@ Smaller tools
 Every function takes a CSS colour, and returns nil for anything else:
 
 ```clojure
-(require '[dk.simongray.colour-coded.contrast :as contrast]
+(require '[dk.simongray.colour-coded.choose :as choose]
+         '[dk.simongray.colour-coded.contrast :as contrast]
          '[dk.simongray.colour-coded.mix :as mix]
-         '[dk.simongray.colour-coded.target :as target]
          '[dk.simongray.colour-coded.vision :as vision])
 
 ;; the contrast of two colours, by WCAG 2.2
@@ -107,8 +107,12 @@ Every function takes a CSS colour, and returns nil for anything else:
 ;; => 9.595…
 
 ;; a colour at the lightness that gives it the contrast text needs
-(cc/hex (target/at-contrast "#c8382d" "white"))
+(cc/hex (contrast/at-ratio "#c8382d" "white"))
 ;; => "#d44437"
+
+;; the named colour of CSS that's nearest to a colour
+(choose/nearest "#24476b")
+;; => "darkslategrey"
 
 ;; halfway between two colours
 (cc/hex (mix/mix "red" "blue"))

@@ -1,6 +1,7 @@
 (ns dk.simongray.colour-coded.choose
-  "Colours chosen from among others, e.g. the colours of an image or those that
-  a designer made, and a small scheme for a UI chosen from them."
+  "Colours chosen from among others, e.g. the colours of an image, those that
+  a designer made or the named colours of CSS, and a small scheme for a UI
+  chosen from them."
   (:refer-clojure :exclude [spread])
   (:require [dk.simongray.colour-coded :as cc]
             [dk.simongray.colour-coded.contrast :as contrast]
@@ -51,6 +52,33 @@
   (let [colours (filter #(contrast/ratio % background) xs)]
     (when (seq colours)
       (apply max-key #(contrast/ratio % background) colours))))
+
+;; CSS Color 4, section 6.1, says itself that its names are spread unevenly
+;; over sRGB and aren't consistent, so a name is a rough label. It has two
+;; names for some colours, e.g. gray and grey. min-key returns the last of
+;; equals, so sorting the names makes it the later one in the alphabet
+;; https://www.w3.org/TR/css-color-4/#named-colors
+(defn nearest
+  "The colour nearest to the colour `x` among the colours `xs`, by ΔEOK or by
+  the measure `f`, a function of two colours, e.g. difference/delta-e-2000.
+
+  Where `xs` is a map of names to colours, the result is the name of the
+  nearest one. By default `xs` is the named colours of CSS, so one argument
+  returns the name nearest to a colour, e.g. \"darkslategrey\". No measure is
+  known to agree best with the names that people give, so ΔEOK is a judgement
+  there."
+  ([x]
+   (nearest x cc/named-colours))
+  ([x xs]
+   (nearest x xs difference/delta-e))
+  ([x xs f]
+   (let [pairs (if (map? xs)
+                 (sort-by (comp str key) xs)
+                 (map (juxt identity identity) xs))]
+     (when (cc/colour x)
+       (some->> (seq (filter (comp cc/colour second) pairs))
+                (apply min-key #(f x (second %)))
+                first)))))
 
 (defn spread
   "The colours of `xs` that differ from every colour kept before them by a ΔEOK

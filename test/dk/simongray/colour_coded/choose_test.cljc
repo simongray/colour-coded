@@ -1,7 +1,8 @@
 (ns dk.simongray.colour-coded.choose-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [dk.simongray.colour-coded :as cc]
-            [dk.simongray.colour-coded.choose :as choose]))
+            [dk.simongray.colour-coded.choose :as choose]
+            [dk.simongray.colour-coded.difference :as difference]))
 
 (defn- hexes
   "The scheme `m` with its colours as hex colours."
@@ -43,3 +44,25 @@
 (deftest spreading
   (is (= ["#2040a0" "#c03020"] (choose/spread ["#2040a0" "#2448a4" "#c03020"] 0.05))
       "the second blue is too close to the first"))
+
+(deftest the-nearest-of-a-list
+  (is (= "orange" (choose/nearest "#ff9900" ["red" "orange" "yellow"])))
+  (is (= "red" (choose/nearest "#dd1100" ["red" "orange" "yellow"] difference/delta-e-2000)))
+  (is (nil? (choose/nearest "red" []))))
+
+(deftest the-nearest-name
+  (testing "each named colour of CSS has its own name"
+    (doseq [hex (vals cc/named-colours)]
+      (is (= hex (cc/named-colours (choose/nearest hex))) hex)))
+  (testing "the later of two names for one colour"
+    (is (= ["grey" "cyan" "magenta"] (map choose/nearest ["#808080" "#00ffff" "#ff00ff"]))))
+  (testing "the nearest name to a colour without one"
+    (is (= "darkslategrey" (choose/nearest "#24476b")))
+    (is (= "cornflowerblue" (choose/nearest "#3498db"))))
+  (testing "names of your own, and another measure"
+    (is (= "navy" (choose/nearest "#24476b" {"navy" "#000080" "sky" "#87ceeb"})))
+    (is (= "red" (choose/nearest "#ff0101" cc/named-colours difference/delta-e-2000))))
+  (testing "a name whose colour isn't one is skipped"
+    (is (= "sky" (choose/nearest "#24476b" {"navy" "not a colour" "sky" "#87ceeb"})))
+    (is (nil? (choose/nearest "#24476b" {"navy" "not a colour"})))
+    (is (nil? (choose/nearest "#24476b" {})))))
