@@ -34,6 +34,54 @@
   [xs]
   (first (filter chromatic? xs)))
 
+(defn- hue-between
+  "The degrees between the hues `a` and `b`, the shorter way round."
+  [a b]
+  (let [d (mod (abs (- a b)) 360)]
+    (min d (- 360 d))))
+
+(defn- with-hues
+  "The entries of the `palette` whose colour has a hue, each with its
+  :chroma and its :hue in OKLCH."
+  [palette]
+  (for [{:keys [colour share] :as entry} palette
+        :when (and (number? share) (chromatic? colour))
+        :let  [[_ c h] (:coords (cc/to colour :oklch))]]
+    (assoc entry :chroma c :hue h)))
+
+(defn- share-near
+  "The share of an image that the `entries` within 15° of the `hue` cover."
+  [entries hue]
+  (transduce (comp (filter #(<= (hue-between hue (:hue %)) 15))
+                   (map :share))
+             +
+             entries))
+
+;; Material ranks the colours of a wallpaper by how much of it lies within
+;; 15° of the hue of each and by its chroma, and leaves out near-greys and
+;; hues on 1% of it or less. Its hue and chroma are HCT's, and these are
+;; OKLCH's, so the weights are a judgement: 0.6 for the share, and 0.4 for
+;; the chroma, which counts in full from 0.2
+;; https://github.com/material-foundation/material-color-utilities/blob/main/typescript/score/score.ts
+(defn ranked
+  "The colours of the `palette` that have a hue, the best to derive the
+  colours of a UI from first. The palette is maps of a :colour and its
+  :share of an image, as quantise and image/palette return them.
+
+  A colour ranks by the share of the image near its hue and by its chroma,
+  so a vivid detail can come before the dull ground that seed returns. Greys
+  are left out, and so is a hue on 1% of the image or less.
+
+      (first (ranked (quantise/k-means pixels 8)))"
+  [palette]
+  (let [entries (with-hues palette)]
+    (->> entries
+         (map #(assoc % :near (share-near entries (:hue %))))
+         (filter #(< 0.01 (:near %)))
+         (sort-by #(- (+ (* 0.6 (:near %))
+                         (* 0.4 (min 1.0 (/ (:chroma %) 0.2))))))
+         (mapv :colour))))
+
 ;; WCAG 2.2, success criterion 1.4.3
 (defn first-with-contrast
   "The first colour of `xs` whose contrast ratio with the `background` is at

@@ -31,6 +31,27 @@
   (is (nil? (choose/seed ["#ffffff" "#808080" "#f4f4f0"])) "none among greys, or off-whites")
   (is (nil? (choose/seed []))))
 
+(deftest the-colours-of-a-palette-ranked
+  (is (= ["#a91410" "#2a130a"]
+         (choose/ranked [{:colour "#2a130a" :share 0.45}
+                         {:colour "#ffffff" :share 0.4}
+                         {:colour "#a91410" :share 0.15}]))
+      "a vivid detail before the dull ground, which seed returns")
+  (is (= ["#2040a0" "#4060c0" "#c06020"]
+         (choose/ranked [{:colour "#c06020" :share 0.3}
+                         {:colour "#2040a0" :share 0.2}
+                         {:colour "#4060c0" :share 0.2}]))
+      "two blues count together, and outweigh an orange that covers more than either")
+  (is (= ["#24476b"]
+         (choose/ranked [{:colour "#ffffff" :share 0.5}
+                         {:colour "#808080" :share 0.3}
+                         {:colour "#24476b" :share 0.2}]))
+      "without the greys")
+  (is (= ["#24476b"] (choose/ranked [{:colour "red" :share 0.005} {:colour "#24476b" :share 0.5}]))
+      "or a hue on 1% of the image or less")
+  (is (= [] (choose/ranked [{:colour "#808080" :share 1.0}])))
+  (is (= [] (choose/ranked []))))
+
 (deftest contrast
   (is (= "#f0c040" (choose/first-with-contrast ["#1a1a1a" "#f0c040"] "#a90000" 3))
       "the first that stands apart from the background, as podcast-clj's accent")

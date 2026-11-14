@@ -26,6 +26,25 @@
   (is (= "oklch(from var(--seed) 33% min(c, 0.1) calc(h + 180))" (tone/relative-css "--seed" bar)))
   (is (= "lch(from var(--seed) 40 min(c, 60) h)" (tone/relative-css "--seed" {:space :lch :l 40 :c 60}))))
 
+;; a bar that's darker under a dark seed
+(def band {:l [0.22 0.34] :c 0.1 :turn 180})
+
+(deftest a-token-with-a-range-of-lightness
+  (let [l #(first (:coords (tone/tone % band)))]
+    (is (data/close? 1e-9 0.22 (l "oklch(10% 0.1 30)")) "no darker than the least")
+    (is (data/close? 1e-9 0.28 (l "oklch(28% 0.1 30)")) "the seed's own between the two")
+    (is (data/close? 1e-9 0.34 (l "oklch(80% 0.1 30)")) "and no lighter than the most"))
+  (is (data/close? 1e-9 46 (first (:coords (tone/tone "oklch(80% 0.1 30)" {:space :lch :l [25 46] :c 60}))))
+      "in the token's own space")
+  (is (= "oklch(from var(--seed) clamp(0.22, l, 0.34) min(c, 0.1) calc(h + 180))"
+         (tone/relative-css "--seed" band)))
+  (is (= "lch(from var(--seed) clamp(25, l, 46) min(c, 60) h)"
+         (tone/relative-css "--seed" {:space :lch :l [25 46] :c 60})))
+  (testing "its contrast is that of the end where it's least"
+    (let [worst (tone/worst-contrast on-bar band)]
+      (is (data/close? 1e-9 (:ratio (tone/worst-contrast on-bar {:l 0.34 :c 0.1 :turn 180})) (:ratio worst)))
+      (is (<= 0.4 (:lightness worst)) "which a light seed reaches"))))
+
 (deftest the-contrast-of-the-bars-holds-at-every-hue
   (is (<= 10 (:ratio (tone/worst-contrast on-bar bar))))
   (is (<= 6.8 (:ratio (tone/worst-contrast on-bar-2 bar))))

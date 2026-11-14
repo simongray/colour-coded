@@ -82,6 +82,7 @@
    "tone/unmapped"           #(tone/unmapped % {:l 0.5})
    "tone/tone"               #(tone/tone % {:l 0.5})
    "tone/tone on a shade"    #(tone/tone % {:shade 5})
+   "tone/tone in a range"    #(tone/tone % {:l [0.2 0.4]})
    "tone/tones"              #(tone/tones % {:a {:l 0.5}})
    "vision/simulate"         #(vision/simulate % :protan)
    "greyscale/values"        greyscale/values
@@ -150,7 +151,8 @@
     (is (nil? (composite/over "red" "blue" :oklch)))
     (is (nil? (composite/over "red" "blue" :hsl))))
   (testing "a token that has no lightness or no chroma to take"
-    (doseq [token [{} {:shade 16} {:space :nope :l 0.5} {:space :srgb :l 0.5} {:space :hsl :l 50}]]
+    (doseq [token [{} {:shade 16} {:space :nope :l 0.5} {:space :srgb :l 0.5} {:space :hsl :l 50}
+                   {:l "0.5"} {:l [0.5]} {:l [0.6 0.4]} {:l ["a" "b"]}]]
       (is (nil? (tone/lightness token)) (pr-str token))
       (is (nil? (tone/unmapped "red" token)) (pr-str token))
       (is (nil? (tone/tone "red" token)) (pr-str token))
@@ -197,6 +199,9 @@
     (is (= "red" (choose/first-with-contrast ["not a colour" nil "red"] "white" 3)))
     (is (= "blue" (choose/most-contrast ["not a colour" nil "blue"] "white")))
     (is (= (choose/spread clean) (choose/spread with-bad)))
+    (is (= ["blue"] (choose/ranked [{:colour "not a colour" :share 0.5} {:colour "red"}
+                                    nil {:colour "blue" :share 0.5}]))
+        "nor an entry of a palette without a share")
     (is (= (vision/least-difference clean) (vision/least-difference with-bad)))
     (is (= (epaper/least-gap clean) (epaper/least-gap with-bad)))
     (is (= (choose/scheme clean) (choose/scheme with-bad)))
@@ -212,6 +217,7 @@
       (is (nil? (choose/most-contrast ["not a colour"] "white")))
       (is (nil? (choose/scheme ["not a colour"])))
       (is (= [] (choose/spread ["not a colour"])))
+      (is (= [] (choose/ranked [{:colour "not a colour" :share 1.0}])))
       (is (nil? (difference/least ["not a colour" "red"])))
       (is (nil? (mix/gradient ["not a colour"])))
       (is (nil? (mix/gradient-steps ["not a colour"] 3))))))

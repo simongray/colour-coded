@@ -63,6 +63,16 @@ it is a choice. It still wants the accent to contrast 3:1 with the page, which W
 doesn't ask of a button that has a label, so a light colour such as yellow darkens in
 the light appearance.
 
+A token of `tone` can keep the seed's own lightness within a range, e.g. for a bar that's
+darker under dark artwork. Its contrast then holds only as far as it does at both ends of
+the range, so `tone/worst-contrast` tries seeds from black to white for it.
+
+`choose/ranked` ranks the colours of an image by the share of it near each one's hue and
+by chroma, where `choose/seed` returns the commonest that has a hue. Material ranks a
+wallpaper's colours the same way, but in HCT, so the weights here are judgements, tried
+on the artwork of about a thousand podcasts. `image/seed` and the themes still use
+`choose/seed`.
+
 An image with no opaque pixels has no seed, so it has no theme. A made-up grey would
 hide that, so pass a colour of your own to `theme/from-seed` for that case.
 
